@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script>
+        // Check Login & Role restrictions
+        const currentRole = localStorage.getItem('userRole');
+        if (!currentRole) {
+            window.location.href = 'index.html';
+        } else if (currentRole !== 'admin') {
+            alert('สิทธิ์ถูกจำกัด! เฉพาะผู้ดูแลระบบเท่านั้นที่สามารถเข้าหน้าวางแผนรังวัดได้');
+            window.location.href = 'index.html';
+        }
+    </script>
+    <title>ระบบวางแผนออกรังวัด (Survey Scheduling)</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;700&display=swap');
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            background-color: #f8f9fa;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 3-Column Layout */
+        .col-sidebar {
+            width: 320px;
+            background: white;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+
+        .col-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #fff;
+            padding: 15px;
+            overflow-y: auto;
+        }
+
+        .col-map {
+            width: 450px;
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid #ddd;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        /* Lists & Scrollbars */
+        #req_list {
+            overflow-y: auto;
+        }
+
+        .list-group-item {
+            cursor: pointer;
+            transition: 0.2s;
+            border-radius: 0 !important;
+            border-left: 0;
+            border-right: 0;
+        }
+
+        .list-group-item:hover {
+            background-color: #f1f8ff;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+
+        /* Map Space */
+        #map {
+            width: 100%;
+            flex: 1;
+            z-index: 1;
+        }
+
+        /* Resizers */
+        .resizer {
+            width: 8px;
+            background: #e9ecef;
+            cursor: ew-resize;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-left: 1px solid #ccc;
+        }
+
+        .resizer::after {
+            content: "⋮";
+            font-size: 18px;
+            color: #888;
+        }
+
+        .resizer.active {
+            background: #adb5bd;
+        }
+
+        /* Cards and Elements */
+        .schedule-card {
+            background-color: #fcfcfc;
+            border: 1px dashed #ccc;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .time-slot {
+            font-weight: bold;
+            color: #0d6efd;
+            font-size: 1.1rem;
+        }
+
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+        }
+
+        /* Mobile Responsive Overrides */
+        @media (max-width: 768px) {
+            .d-flex.h-100 {
+                flex-direction: column !important;
+                height: auto !important;
+            }
+
+            .col-sidebar,
+            .col-main,
+            .col-map {
+                width: 100% !important;
+                border: none !important;
+                border-bottom: 2px solid #ddd !important;
+                flex: none !important;
+                height: 500px;
+                /* Fixed scrollable block height per section on mobile */
+            }
+
+            .resizer {
+                display: none !important;
+            }
+
+            .col-main {
+                height: auto;
+            }
+
+            #map {
+                min-height: 400px;
+            }
+
+            /* Stack horizontal forms inputs in control panel */
+            .schedule-card .row.g-2 {
+                flex-direction: column;
+            }
+
+            .schedule-card .col-md-2,
+            .schedule-card .col-md-3 {
+                width: 100%;
+            }
+
+            /* Convert wide table to stacked layout for mobile readability */
+            #schedule_table thead {
+                display: none;
+            }
+
+            #schedule_table tbody tr {
+                display: block;
+                margin-bottom: 15px;
+                border: 1px solid #dee2e6;
+                border-radius: 8px;
+                padding: 10px;
+                background: #fff;
+            }
+
+            #schedule_table td {
+                display: block;
+                text-align: left !important;
+                border: none;
+                padding: 5px 0;
+            }
+
+            #schedule_table td:nth-child(2) {
+                font-size: 1.2rem;
+                border-bottom: 1px dashed #ccc;
+                margin-bottom: 5px;
+            }
+
+            #schedule_table td:last-child {
+                text-align: right !important;
+            }
+
+            .mobile-nav {
+                display: flex !important;
+                background: #0d6efd;
+                padding: 10px;
+                position: sticky;
+                top: 0;
+                z-index: 2000;
+            }
+
+            .mobile-nav button {
+                flex: 1;
+                color: white;
+                background: transparent;
+                border: 1px solid rgba(255, 255, 255, 0.3);
+                padding: 8px;
+                margin: 0 4px;
+                border-radius: 6px;
+                font-weight: bold;
+            }
+
+            .mobile-nav button.active {
+                background: white;
+                color: #0d6efd;
+            }
+
+            .col-sidebar,
+            .col-main,
+            .col-map {
+                height: auto;
+                display: none !important;
+                /* Managed by JS Tabs on Mobile */
+            }
+
+            .col-sidebar.active-tab,
+            .col-main.active-tab,
+            .col-map.active-tab {
+                display: flex !important;
+            }
+
+            #map {
+                height: 60vh !important;
+                min-height: 400px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Mobile Tab Nav (Hidden on Desktop) -->
+    <div class="mobile-nav d-none">
+        <button id="tab_sidebar" onclick="switchMobileTab('sidebar')"><i class="fa-solid fa-list"></i>
+            ตะกร้างาน</button>
+        <button id="tab_main" class="active" onclick="switchMobileTab('main')"><i class="fa-solid fa-calendar-days"></i>
+            แผนรังวัด</button>
+        <button id="tab_map" onclick="switchMobileTab('map')"><i class="fa-solid fa-map-location-dot"></i>
+            แผนที่</button>
+    </div>
+
+    <div class="container-fluid p-0">
+        <div class="d-flex h-100">
+
+            <!-- 1. Sidebar คิวงานรังวัด -->
+            <div class="col-sidebar" id="col-sidebar">
+                <div class="p-3 bg-dark text-white fw-bold d-flex justify-content-between align-items-center">
+                    <div><i class="fa-solid fa-map-location-dot"></i> เตรียมวางแผนรังวัด</div>
+                    <span class="badge bg-light text-dark" id="count_badge">0</span>
+                </div>
+                <div class="p-2 border-bottom bg-light">
+                    <button class="btn btn-sm btn-outline-dark w-100 mb-2" onclick="loadQueueFromSheet()">
+                        <i class="fa-solid fa-rotate"></i> โหลดข้อมูลล่าสุด
+                    </button>
+                    <input type="text" class="form-control form-control-sm" id="search_box"
+                        placeholder="กรองชื่อ, พื้นที่..." onkeyup="filterList()">
+                </div>
+                <div class="list-group list-group-flush flex-grow-1" id="req_list">
+                    <div class="text-center p-3 text-muted">กำลังดึงข้อมูล...</div>
+                </div>
+            </div>
+
+            <div class="resizer" id="resizer-1"></div>
+
+            <!-- 2. Main Center (จัดการคิวลงตารางรังวัด) -->
+            <div class="col-main" id="col-main">
+                <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+                    <h5 class="text-dark fw-bold mb-0">
+                        <button class="btn btn-sm btn-outline-secondary me-2"
+                            onclick="window.location.href='index.html'">
+                            <i class="fa-solid fa-arrow-left"></i> หน้าหลัก
+                        </button>
+                        <i class="fa-solid fa-calendar-days"></i> จัดตารางนัดหมายประจำวัน
+                    </h5>
+                    <div class="d-flex gap-2 align-items-center">
+                        <label class="small text-muted mb-0">ดูแผนของวันที่:</label>
+                        <input type="date" class="form-control form-control-sm" id="view_date">
+                        <button class="btn btn-sm btn-primary" onclick="loadSavedSchedule()">
+                            <i class="fa-solid fa-search"></i> เรียกดูแผน
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Control Panel วางแผนเวลา -->
+                <div class="schedule-card mb-3">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-2">
+                            <label class="form-label small fw-bold text-muted">วันที่ต้องการลงแผน</label>
+                            <input type="date" class="form-control form-control-sm" id="sched_date">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-bold text-muted">เวลาเริ่มงาน</label>
+                            <input type="time" class="form-control form-control-sm" id="sched_start" value="09:00">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-bold text-muted">เวลาเลิกงาน</label>
+                            <input type="time" class="form-control form-control-sm" id="sched_end" value="16:00">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small fw-bold text-muted">พักเที่ยง (ชม.)</label>
+                            <input type="number" class="form-control form-control-sm" id="sched_break" value="1"
+                                step="0.5">
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-dark btn-sm w-100 fw-bold" onclick="calculateSchedule()">
+                                <i class="fa-solid fa-calculator"></i> คำนวณเวลา
+                            </button>
+                        </div>
+                        <div class="col-md-2">
+                            <button class="btn btn-success btn-sm w-100 fw-bold" onclick="saveScheduleToDB()">
+                                <i class="fa-solid fa-cloud-arrow-up"></i> บันทึกแผน
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-end mb-2">
+                    <h6 class="fw-bold text-muted mb-0">รายการรังวัด <span class="badge bg-secondary"
+                            id="selected_count">0/10</span></h6>
+                    <button class="btn btn-sm btn-outline-danger"
+                        onclick="clearSchedule()">ล้างกระดาน/จัดแผนใหม่</button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle" id="schedule_table">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 50px;" class="text-center">ลำดับ</th>
+                                <th style="width: 100px;" class="text-center">เวลา</th>
+                                <th>ผู้ขอเช่า</th>
+                                <th>ข้อมูลติดต่อ</th>
+                                <th>ที่ตั้งแปลง</th>
+                                <th style="width: 130px;" class="text-center">สถานะ</th>
+                                <th style="width: 50px;" class="text-center">-</th>
+                            </tr>
+                        </thead>
+                        <tbody id="schedule_body">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted p-4">ยังไม่ได้เลือกรายการ หรือ
+                                    ยังไม่มีแผนในวันที่เลือก</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-auto pt-3 text-end border-top">
+                    <!-- TODO: Wire this to a save function -->
+                    <button class="btn btn-primary fw-bold px-4" onclick="exportSchedule()">
+                        <i class="fa-solid fa-file-pdf"></i> ออกรายงานแผนงาน (PDF)
+                    </button>
+                </div>
+            </div>
+
+            <div class="resizer" id="resizer-2"></div>
+
+            <!-- 3. Right Map Panel (แสดงจุดพื้นที่รังวัดทั้งหมด) -->
+            <div class="col-map" id="col-map">
+                <div class="p-2 bg-light border-bottom text-center fw-bold text-muted small">
+                    <i class="fa-solid fa-location-dot"></i> จุดตั้งแปลงที่จะไปรังวัด
+                </div>
+                <div id="map"></div>
+
+                <div class="p-2 border-top bg-white">
+                    <div id="active_target_detail" class="small">
+                        <span class="text-muted">เลือกคิวเพื่อดูพิกัด...</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Leaflet & App Scripts -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+    <script>
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxaZu6t_xT89qbGV612-Q8Ng_d-FqJ5V3QAoAwqsT5k9cg4O5iK_OlTTtcTXXgAzQXz/exec';
+
+        let map;
+        let queueData = [];
+        let selectedQueue = []; // รายการคิวที่จะไปรังวัดวันนี้ (ตะกร้า)
+        let mapMarkers = [];    // เก็บ Marker ทั้งหมดที่พล็อตวันนี้
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initResizers();
+            initMap();
+            loadQueueFromSheet();
+            document.getElementById('sched_date').valueAsDate = new Date();
+
+            // ปิด autocomplete ทุกช่อง
+            document.querySelectorAll('input, form').forEach(el => el.setAttribute('autocomplete', 'off'));
+        });
+
+        // ==========================================
+        // 1. Queue Management & Fetching
+        // ==========================================
+        function loadQueueFromSheet() {
+            let list = document.getElementById('req_list');
+            list.innerHTML = '<div class="text-center p-3 text-muted">กำลังดึงข้อมูล...</div>';
+
+            fetch(GAS_URL)
+                .then(r => r.json())
+                .then(data => {
+                    // กรองเอาเฉพาะข้อมูลที่มีสถานะ 'สอบสวนสิทธิแล้ว' หรือ 'สอบสวนสิทธิภายหลัง' 
+                    // เพื่อส่งมารอรังวัด
+                    queueData = data.filter(item =>
+                        item.status === 'สอบสวนสิทธิแล้ว' ||
+                        item.status === 'สอบสวนสิทธิภายหลัง' ||
+                        item.status === 'บันทึกเป็นร่าง' // สำหรับจิ้มเล่นตอนพัฒนา
+                    );
+                    filterList();
+                })
+                .catch(err => {
+                    list.innerHTML = `<div class="text-center p-3 text-danger">ไม่สามารถโหลดข้อมูลได้: ${err}</div>`;
+                });
+        }
+
+        function filterList() {
+            let search = document.getElementById('search_box').value.toLowerCase();
+            let list = document.getElementById('req_list');
+            list.innerHTML = '';
+
+            let filtered = queueData.filter(item => {
+                let textToSearch = `${item.id} ${item.name} ${item.req_name} ${item.plot_id} ${item.plot_no}`.toLowerCase();
+                return textToSearch.includes(search);
+            });
+
+            document.getElementById('count_badge').innerText = filtered.length;
+
+            if (filtered.length === 0) {
+                list.innerHTML = '<div class="text-center p-3 text-muted">ไม่พบข้อมูลในสถานะพร้อมรังวัด</div>';
+                return;
+            }
+
+            filtered.forEach(item => {
+                let plotName = item.plot_no || item.plot_id || 'ไม่ระบุแปลง';
+                let reqName = item.req_name || item.name || 'ไม่ระบุชื่อ';
+
+                // เช็คว่ารายการนี้ถูกเลือกหยิบเข้าตะกร้าไปแล้วหรือยัง
+                let isSelected = selectedQueue.find(q => q.id === item.id) ? 'bg-light border-primary' : '';
+                let icon = isSelected ? '<i class="fa-solid fa-check-circle text-success"></i>' : '<i class="fa-regular fa-circle text-muted"></i>';
+
+                list.innerHTML += `
+                <button class="list-group-item list-group-item-action ${isSelected}" onclick="toggleSelection('${item.id}')">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="text-truncate" style="max-width: 80%;">
+                            <strong class="text-dark">${reqName}</strong><br>
+                            <small class="text-muted"><i class="fa-solid fa-map-pin"></i> ${plotName}</small>
+                        </div>
+                        <div>${icon}</div>
+                    </div>
+                </button>`;
+            });
+        }
+
+        // ==========================================
+        // 2. Selection & Basket Logic
+        // ==========================================
+        function toggleSelection(id) {
+            let existingIndex = selectedQueue.findIndex(q => q.id === id);
+
+            if (existingIndex > -1) {
+                // ถ้ามีอยู่แล้ว ให้เอาออก
+                selectedQueue.splice(existingIndex, 1);
+            } else {
+                // ถ้ายังไม่มี ลิมิตไว้ 10 โควต้าต่อวัน
+                if (selectedQueue.length >= 10) {
+                    Swal.fire('คำเตือน', 'จำนวนคิวแผนงานเต็มโควต้า (10 รายต่อวัน) แล้ว', 'warning');
+                    return;
+                }
+
+                let target = queueData.find(q => q.id === id);
+                if (target) {
+                    // ยัดลงตะกร้าแบบเปล่าๆ รอคำนวณเวลา
+                    selectedQueue.push({ ...target, timeSlot: '-' });
+                }
+            }
+
+            filterList(); // รีเฟรชฝั่งซ้ายให้เช็คบ็อกซ์อัปเดต
+            renderScheduleTable();
+            renderMapMarkers();
+        }
+
+        function clearSchedule() {
+            selectedQueue = [];
+            filterList();
+            renderScheduleTable();
+            renderMapMarkers();
+        }
+
+        function removeRow(id) {
+            selectedQueue = selectedQueue.filter(item => item.id !== id);
+            filterList();
+            renderScheduleTable();
+            renderMapMarkers();
+        }
+
+        // ==========================================
+        // 3. Time Allocation Algorithm
+        // ==========================================
+        function calculateSchedule() {
+            if (selectedQueue.length === 0) return Swal.fire('เตือน', 'กรุณาเลือกคิวงานก่อนคำนวณเวลา', 'warning');
+
+            let startStr = document.getElementById('sched_start').value;
+            let endStr = document.getElementById('sched_end').value;
+            let breakHours = parseFloat(document.getElementById('sched_break').value) || 0;
+
+            if (!startStr || !endStr) return Swal.fire('เตือน', 'กรุณาระบุเวลาเริ่มและเลิกงาน', 'warning');
+
+            // Parse text to minute values
+            let [sH, sM] = startStr.split(':').map(Number);
+            let [eH, eM] = endStr.split(':').map(Number);
+
+            let totalStartMin = (sH * 60) + sM;
+            let totalEndMin = (eH * 60) + eM;
+
+            let totalWorkDurationMin = (totalEndMin - totalStartMin) - (breakHours * 60);
+
+            if (totalWorkDurationMin <= 0) {
+                return Swal.fire('Error', 'เวลาเลิกงานต้องมากกว่าเวลาเริ่มงาน (รวมหักพักเที่ยงแล้ว)', 'error');
+            }
+
+            let queueCount = selectedQueue.length;
+            let minsPerTarget = Math.floor(totalWorkDurationMin / queueCount);
+
+            let currentPointer = totalStartMin;
+
+            // Loop Assign Timeslot
+            for (let i = 0; i < queueCount; i++) {
+                // ถือว่าพักเที่ยงตอนเที่ยง (720 นาที) ถ้าตัว Pointer กำลังข้ามช่วงเที่ยง ให้พักซะ
+                if (currentPointer < 720 && (currentPointer + minsPerTarget) >= 720) {
+                    // โดดข้ามเวลาพักเที่ยงไปเลย
+                    currentPointer += (breakHours * 60);
+                }
+
+                let slotStart = minsToTimeStr(currentPointer);
+                currentPointer += minsPerTarget;
+                let slotEnd = minsToTimeStr(currentPointer);
+
+                selectedQueue[i].timeSlot = `${slotStart} - ${slotEnd}`;
+            }
+
+            Swal.fire({
+                title: 'คำนวณเสร็จสิ้น',
+                text: `ระบบได้จัดสรรคิวงาน ${queueCount} ราย โดยใช้เวลาเฉลี่ย ${minsPerTarget} นาที/ราย`,
+                icon: 'success',
+                timer: 2000,
+                showConfirmButton: false
+            });
+
+            renderScheduleTable();
+        }
+
+        function minsToTimeStr(totalMins) {
+            let h = Math.floor(totalMins / 60);
+            let m = totalMins % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
+
+        function renderScheduleTable() {
+            document.getElementById('selected_count').innerText = `${selectedQueue.length}/10`;
+            let tbody = document.getElementById('schedule_body');
+            tbody.innerHTML = '';
+
+            if (selectedQueue.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-4">รอบริหารคิว</td></tr>`;
+                return;
+            }
+
+            selectedQueue.forEach((item, index) => {
+                let reqName = item.req_name || item.name || '-';
+                let phone = item.req_phone || item.phone || '';
+                let callTime = item.last_called ? `<br><small class="text-muted"><i class="fa-regular fa-clock"></i> โทรล่าสุด: ${item.last_called}</small>` : '';
+
+                let phoneHTML = phone ? `<a href="tel:${phone}" class="text-decoration-none fw-bold" onclick="logCall('${item.id}')"><i class="fa-solid fa-phone"></i> ${phone}</a>${callTime}` : '-';
+
+                let loc = [];
+                if (item.plot_tambon) loc.push("ต." + item.plot_tambon);
+                if (item.plot_amphoe) loc.push("อ." + item.plot_amphoe);
+                let plotFull = (item.plot_no || item.plot_id || '') + ' ' + loc.join(' ');
+
+                let navHTML = '';
+                if (item.coords && item.coords.includes(',')) {
+                    navHTML = ` <a href="https://maps.google.com/?q=${item.coords}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2 float-end" title="นำทาง"><i class="fa-solid fa-location-arrow"></i></a>`;
+                }
+
+                // Dropdown สถานะที่กดเปลี่ยนได้เลย
+                let currentStatus = item.status || 'รอรังวัด';
+                let statusHTML = `
+                    <select class="form-select form-select-sm" onchange="updateRowStatus('${item.id}', this.value)">
+                        <option value="รอรังวัด" ${currentStatus === 'รอรังวัด' ? 'selected' : ''}>รอรังวัด</option>
+                        <option value="รังวัดแล้ว" ${currentStatus === 'รังวัดแล้ว' ? 'selected' : ''}>รังวัดแล้ว</option>
+                        <option value="เลื่อนนัด" ${currentStatus === 'เลื่อนนัด' ? 'selected' : ''}>เลื่อนนัด</option>
+                        <option value="ยกเลิก" ${currentStatus === 'ยกเลิก' ? 'selected' : ''}>ยกเลิก</option>
+                    </select>
+                `;
+
+                tbody.innerHTML += `
+                <tr>
+                    <td class="text-center">${index + 1}</td>
+                    <td class="time-slot text-center">${item.timeSlot || item.survey_time || '-'}</td>
+                    <td><strong>${reqName}</strong><br><small class="text-muted">${item.id}</small></td>
+                    <td>${phoneHTML}</td>
+                    <td>${plotFull}${navHTML}</td>
+                    <td class="text-center">${statusHTML}</td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="removeRow('${item.id}')"><i class="fa-solid fa-xmark"></i></button>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        // ==========================================
+        // 4. Persistence & Updates (Round 15)
+        // ==========================================
+        function saveScheduleToDB() {
+            if (selectedQueue.length === 0) return Swal.fire('เตือน', 'ยังไม่มีคิวในกระดานรังวัด', 'warning');
+            let schedDate = document.getElementById('sched_date').value;
+            if (!schedDate) return Swal.fire('เตือน', 'กรุณาระบุวันที่ต้องการลงแผนก่อนบันทึก', 'warning');
+
+            // ตรวจสอบว่าทั้งหมดถูกคำนวณเวลาแล้ว
+            let unassigned = selectedQueue.filter(q => !q.timeSlot || q.timeSlot === '-');
+            if (unassigned.length > 0) return Swal.fire('เตือน', 'กรุณากดปุ่ม "คำนวณเวลา" ให้ครบทุกรายการก่อนบันทึกแผน', 'warning');
+
+            Swal.fire({ title: 'กำลังบันทึกแผน...', didOpen: () => Swal.showLoading() });
+
+            let payload = {
+                action: 'save_survey_schedule',
+                survey_date: schedDate,
+                schedule: selectedQueue.map(q => ({ id: q.id, timeSlot: q.timeSlot }))
+            };
+
+            fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
+                .then(() => {
+                    Swal.fire('สำเร็จ', 'บันทึกแผนรังวัดลงฐานข้อมูลแล้ว ช่างสามารถเรียกดูแผนของวันนี้ได้เลย!', 'success');
+                    setTimeout(() => loadQueueFromSheet(), 2000); // refresh db state
+                })
+                .catch(err => Swal.fire('Error', 'เซฟแผนพลาด: ' + err, 'error'));
+        }
+
+        function loadSavedSchedule() {
+            let viewDate = document.getElementById('view_date').value;
+            if (!viewDate) return Swal.fire('เตือน', 'กรุณาเลือกวันที่ก่อนกดเรียกดูแผน', 'warning');
+
+            let savedItems = queueData.filter(q => q.survey_date === viewDate);
+            if (savedItems.length === 0) {
+                Swal.fire('ข้อมูล', 'ไม่พบแผนการออกรังวัดในวันที่ระบุ', 'info');
+            } else {
+                selectedQueue = [...savedItems];
+                // แปลงเวลาที่ดึงมาจาก survey_time เป็น timeSlot กลับมาแสดง
+                selectedQueue.forEach(q => q.timeSlot = q.survey_time || '-');
+                document.getElementById('sched_date').value = viewDate;
+                renderScheduleTable();
+                renderMapMarkers();
+            }
+        }
+
+        function logCall(caseId) {
+            let nowTime = new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.';
+            // อัปเดต UI ทันทีเผื่อความลื่นไหล
+            let target = selectedQueue.find(q => q.id === caseId);
+            if (target) target.last_called = nowTime;
+            renderScheduleTable();
+
+            let payload = { action: 'update_survey_item', update_type: 'call_log', case_id: caseId, call_time: nowTime };
+            fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+        }
+
+        function updateRowStatus(caseId, newStatus) {
+            let target = selectedQueue.find(q => q.id === caseId);
+            if (target) target.status = newStatus;
+
+            let payload = { action: 'update_survey_item', update_type: 'status', case_id: caseId, new_status: newStatus };
+            fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
+            // แจ้ง toast สะกิดเล็กๆ ว่าอัปเดตสถานะแล้ว
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 1500,
+                icon: 'success',
+                title: 'อัปเดตสถานะเป็น ' + newStatus
+            });
+        }
+
+        // ==========================================
+        // 5. Mapping Logistics
+        // ==========================================
+        function initMap() {
+            const street = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                maxZoom: 22, attribution: 'Google Maps'
+            });
+
+            map = L.map('map', {
+                center: [17.221, 102.427], // พิกัดกลาง (หนองบัวฯ)
+                zoom: 12,
+                layers: [street]
+            });
+        }
+
+        function renderMapMarkers() {
+            // ลบของเก่าออกให้หมดก่อน
+            mapMarkers.forEach(m => map.removeLayer(m));
+            mapMarkers = [];
+
+            let bounds = [];
+
+            selectedQueue.forEach((item, index) => {
+                if (item.coords && item.coords.includes(',')) {
+                    let [lat, lng] = item.coords.split(',').map(Number);
+
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        // เพิ่ม Number Icon ให้พนักงานรู้ว่าต้องไปไหนก่อนหลัง
+                        let numberIcon = L.divIcon({
+                            className: 'custom-div-icon',
+                            html: `<div style='background-color:#0d6efd; color:white; width:24px; height:24px; border-radius:50%; text-align:center; line-height:24px; font-weight:bold; border:2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);'>${index + 1}</div>`,
+                            iconSize: [24, 24],
+                            iconAnchor: [12, 12]
+                        });
+
+                        let marker = L.marker([lat, lng], { icon: numberIcon }).addTo(map);
+
+                        let reqName = item.req_name || item.name || '-';
+                        marker.bindPopup(`<b>คิวที่ ${index + 1}: ${item.timeSlot}</b><br>${reqName}<br>${item.id}`);
+
+                        // เมื่อเอาเม้าส์ไปชี้หมุด ให้แสดงพิกัดที่กรอบด้านล่าง
+                        marker.on('mouseover', function (e) {
+                            document.getElementById('active_target_detail').innerHTML =
+                                `<span class="text-primary fw-bold">Lat:</span> ${lat.toFixed(5)} <span class="text-primary fw-bold ms-2">Lng:</span> ${lng.toFixed(5)} <br>
+                                 <small class="text-muted"><i class="fa-solid fa-car"></i> เป้าหมายที่ ${index + 1}: ${reqName}</small>`;
+                        });
+
+                        mapMarkers.push(marker);
+                        bounds.push([lat, lng]);
+                    }
+                }
+            });
+
+            // ซูมแผนที่ให้ครอบคลุมจุดทั้งหมดอัตโนมัติ (ถ้ามีอย่างน้อย 1 จุด)
+            if (bounds.length > 0) {
+                map.fitBounds(bounds, { padding: [30, 30] });
+            } else {
+                document.getElementById('active_target_detail').innerHTML = '<span class="text-muted">ไม่พบข้อมูลพิกัดในรายการที่เลือก</span>';
+            }
+        }
+
+
+        // ==========================================
+        // 5. Layout Resizers & Mobile Tabs
+        // ==========================================
+        function switchMobileTab(target) {
+            // Only runs if on mobile
+            if (window.innerWidth > 768) return;
+
+            document.querySelectorAll('.mobile-nav button').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab_' + target).classList.add('active');
+
+            document.getElementById('col-sidebar').classList.remove('active-tab');
+            document.getElementById('col-main').classList.remove('active-tab');
+            document.getElementById('col-map').classList.remove('active-tab');
+
+            document.getElementById('col-' + target).classList.add('active-tab');
+
+            if (target === 'map' && map) {
+                setTimeout(() => map.invalidateSize(), 300);
+            }
+        }
+
+        function initResizers() {
+            if (window.innerWidth <= 768) {
+                // Initialize Mobile State
+                switchMobileTab('main');
+                return;
+            }
+            const resizers = document.querySelectorAll('.resizer');
+            resizers.forEach(resizer => {
+                resizer.addEventListener('mousedown', function (e) {
+                    const leftCol = resizer.previousElementSibling;
+                    const rightCol = resizer.nextElementSibling;
+                    if (!leftCol || !rightCol) return;
+
+                    let startX = e.clientX;
+                    let startWidthLeft = leftCol.getBoundingClientRect().width;
+                    let startWidthRight = rightCol.getBoundingClientRect().width;
+
+                    leftCol.style.flex = `0 0 ${startWidthLeft}px`;
+                    rightCol.style.flex = `0 0 ${startWidthRight}px`;
+
+                    resizer.classList.add('active');
+                    document.body.style.cursor = 'ew-resize';
+                    document.body.style.userSelect = 'none';
+
+                    function onMouseMove(e) {
+                        const dx = e.clientX - startX;
+                        // ล็อคไม่ให้ย่อเล็กเกินไป
+                        if (startWidthLeft + dx > 200 && startWidthRight - dx > 200) {
+                            leftCol.style.flex = `0 0 ${startWidthLeft + dx}px`;
+                            rightCol.style.flex = `0 0 ${startWidthRight - dx}px`;
+                        }
+                        if (map) map.invalidateSize();
+                    }
+
+                    function onMouseUp() {
+                        resizer.classList.remove('active');
+                        document.body.style.cursor = 'default';
+                        document.body.style.userSelect = 'auto';
+                        document.removeEventListener('mousemove', onMouseMove);
+                        document.removeEventListener('mouseup', onMouseUp);
+                    }
+
+                    document.addEventListener('mousemove', onMouseMove);
+                    document.addEventListener('mouseup', onMouseUp);
+                });
+            });
+        }
+
+        const LOCAL_API = 'http://127.0.0.1:5000';
+
+        function exportSchedule() {
+            if (selectedQueue.length === 0) return Swal.fire('เตือน', 'ยังไม่มีคิวในตะกร้า', 'warning');
+
+            let schedDate = document.getElementById('sched_date').value;
+            let payload = {
+                survey_date: schedDate,
+                queue: selectedQueue
+            };
+
+            Swal.fire({ title: 'กำลังสร้างรายงาน PDF...', text: 'โปรดรอสักครู่และไปรับไฟล์ที่โฟลเดอร์รังวัด', didOpen: () => Swal.showLoading() });
+
+            fetch(LOCAL_API + '/print-survey', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+                .then(r => r.json())
+                .then(res => {
+                    if (res.status === 'success') {
+                        Swal.fire('สำเร็จ', 'สร้างไฟล์แผนงาน PDF เรียบร้อยแล้ว', 'success');
+                    } else {
+                        Swal.fire('เตือน', 'PDF ไม่สร้าง: ' + res.message, 'warning');
+                    }
+                })
+                .catch(err => Swal.fire('Error', 'ไม่สามารถเชื่อมต่อ Local API สำหรับพิมพ์ PDF ได้: ' + err, 'error'));
+        }
+
+    </script>
+</body>
+
+</html>
