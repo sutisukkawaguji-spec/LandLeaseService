@@ -110,8 +110,10 @@
             <div>
                 <span class="me-3 fw-bold text-muted" id="user_display_name"></span>
                 <span class="badge bg-dark me-3" id="user_display_role"></span>
-                <button class="btn btn-sm btn-outline-danger" onclick="logout()"><i
+                <button class="btn btn-sm btn-outline-danger me-2" onclick="logout()"><i
                         class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ</button>
+                <button class="btn btn-sm btn-danger shadow-sm" onclick="shutdownApp()"><i
+                        class="fa-solid fa-power-off"></i> ปิดเบื้องหลัง</button>
             </div>
         </div>
 
@@ -324,6 +326,29 @@
                     localStorage.removeItem('userName');
                     document.getElementById('login_form').reset();
                     checkLoginState();
+                }
+            });
+        }
+
+        function shutdownApp() {
+            Swal.fire({
+                title: 'ปิดระบบอย่างสมบูรณ์?',
+                text: 'หน้าต่างนี้และตัวเชื่อมต่ออุปกรณ์เบื้องหลังจะถูกปิดลงด้วย',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'ปิดโปรแกรม',
+                cancelButtonText: 'ยกเลิก',
+                confirmButtonColor: '#d33'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // แอบเรียกไปสั่งปิดเซิร์ฟเวอร์ Local แบบไร้รอยต่อ
+                    fetch('http://localhost:5000/shutdown', { method: 'POST', mode: 'no-cors' })
+                        .catch(e => console.log('Shutdown local server...'));
+
+                    setTimeout(() => {
+                        window.close(); // สั่งปิดหน้าต่าง Browser
+                        Swal.fire('ระบบส่วนหลังปิดแล้ว', 'ระบบหลังบ้านถูกปิดแล้ว กรุณากด (X) ปิดหน้าต่างเบราว์เซอร์นี้ด้วยตนเอง', 'info');
+                    }, 500);
                 }
             });
         }
