@@ -97,6 +97,23 @@
             justify-content: space-between;
             align-items: center;
         }
+
+        /* Mobile View: Show only Survey Planning System */
+        @media (max-width: 768px) {
+
+            #dashboard_content .row>div:nth-child(1),
+            #dashboard_content .row>div:nth-child(2) {
+                display: none !important;
+            }
+
+            #dashboard_content .row>div:nth-child(3) {
+                width: 100%;
+            }
+
+            .navbar-top h5 {
+                font-size: 1rem;
+            }
+        }
     </style>
 </head>
 
@@ -177,8 +194,9 @@
         </div>
     </div>
 
+    <script src="config.js"></script>
     <script>
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxaZu6t_xT89qbGV612-Q8Ng_d-FqJ5V3QAoAwqsT5k9cg4O5iK_OlTTtcTXXgAzQXz/exec';
+        const GAS_URL = CONFIG.GAS_URL;
 
         document.addEventListener('DOMContentLoaded', () => {
             checkLoginState();
@@ -187,7 +205,21 @@
                 e.preventDefault();
                 doLogin();
             });
+
+            // ตรวจสอบการเชื่อมต่อ Server เบื้องต้น
+            checkServerConnection();
         });
+
+        async function checkServerConnection() {
+            try {
+                const res = await fetch(GAS_URL + '?action=get_map_list');
+                if (res.ok) {
+                    AppLog('เชื่อมต่อ Cloud Server สำเร็จ');
+                }
+            } catch (e) {
+                AppLog('ไม่สามารถเชื่อมต่อ Cloud Server ได้', e);
+            }
+        }
 
         function checkLoginState() {
             const role = localStorage.getItem('userRole');
@@ -217,7 +249,7 @@
             }
         }
 
-        function doLogin() {
+        async function doLogin() {
             const user = document.getElementById('username').value.trim();
             const pass = document.getElementById('password').value.trim();
 
@@ -233,67 +265,37 @@
                 password: pass
             };
 
-            fetch(GAS_URL, {
-                method: 'POST',
-                mode: 'no-cors', // บังคับส่งผ่าน
-                body: JSON.stringify(payload)
-            }).then(() => {
-                // เนื่องจาก no-cors เราไม่สามารถอ่านค่า Response ได้ตรงๆ
-                // จึงต้องใช้เทคนิคเปลี่ยนให้ GAS ส่ง GET กลับมาแทน หากต้องการ Response
-                // แต่เพื่อความเร็ว (ตามที่คุณใช้ no-cors กับทุกจุด) เราจะสลับไปเรียกแบบอ่าน GET ได้แทนในกรณีที่เป็น Login
-                checkLoginTrue(payload);
-            }).catch(err => {
-                Swal.fire('Error', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้', 'error');
+            try {
+                // ใช้ POST แบบธรรมดา ถ้าถูกตั้งค่า Web App ให้ Execute as: Me และ Who has access: Anyone จะไม่ติด CORS ขาอ่านกลับ
+                const response = await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    localStorage.setItem('userRole', data.role);
+                    localStorage.setItem('userName', data.name);
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'ยินดีต้อนรับ',
+                        text: `เข้าสู่ระบบในชื่อ: ${data.name}`,
+                        timer: 1500,
+                        showConfirmButton: false
+                    }).then(() => {
+                        checkLoginState();
+                    });
+                } else {
+                    Swal.fire('ผิดพลาด', data.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง', 'error');
+                }
+            } catch (err) {
+                console.error('Login error:', err);
+                Swal.fire('ข้อผิดพลาดเครือข่าย', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ (' + err.message + ')', 'error');
+            } finally {
                 resetBtn(btn);
-            });
-        }
-
-        // ขอใช้การเรียกแบบ jsonp หรือเรียก get ธรรมดาเพื่ออ่านรหัส (เพราะ no-cors อ่าน response JSON ไม่ได้)
-        // เพื่อขจัดปัญหา CORS เราเรียก Web App ผ่าน GET แทนตอนรับค่า
-        function doLogin() {
-            const user = document.getElementById('username').value.trim();
-            const pass = document.getElementById('password').value.trim();
-
-            if (!user || !pass) return;
-
-            const btn = document.getElementById('btn_login');
-            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> กำลังตรวจสอบ...';
-            btn.disabled = true;
-
-            const payload = {
-                action: 'login',
-                username: user,
-                password: pass
-            };
-
-            // ใช้ POST แบบธรรมดา ถ้าถูกตั้งค่า Web App ให้ Execute as: Me และ Who has access: Anyone จะไม่ติด CORS ขาอ่านกลับ
-            fetch(GAS_URL, {
-                method: 'POST',
-                body: JSON.stringify(payload)
-            })
-                .then(res => res.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        localStorage.setItem('userRole', data.role);
-                        localStorage.setItem('userName', data.name);
-
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'ยินดีต้อนรับ',
-                            text: `เข้าสู่ระบบในชื่อ: ${data.name}`,
-                            timer: 1500,
-                            showConfirmButton: false
-                        }).then(() => {
-                            checkLoginState();
-                        });
-                    } else {
-                        Swal.fire('ผิดพลาด', data.message || 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง', 'error');
-                    }
-                })
-                .catch(err => {
-                    Swal.fire('ข้อผิดพลาดเครือข่าย', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ หากระบบทำงานในโหมด no-cors คุณทำการเปิด CORS ในระดับ Script หรือยัง ระบบต้องการการตั้งค่า Web app สิทธิ์ให้เปิดแบบ anyone ครับ', 'error');
-                })
-                .finally(() => resetBtn(btn));
+            }
         }
 
 
