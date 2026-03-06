@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parallel Map - จอแสดงสำหรับประชาชน</title>
+    <!-- Use FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Leaflet -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body,
+        html,
+        #map {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .sync-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: rgba(13, 110, 253, 0.95);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-family: 'Sarabun', sans-serif;
+            font-size: 16px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ghost-cursor {
+            width: 24px;
+            height: 24px;
+            background: rgba(220, 53, 69, 0.6);
+            /* Danger color */
+            border: 3px solid white;
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+            position: relative;
+        }
+
+        .ghost-cursor::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            border: 2px solid rgba(220, 53, 69, 0.3);
+            border-radius: 50%;
+            animation: ripple 1.5s infinite;
+        }
+
+        @keyframes ripple {
+            0% {
+                transform: translate(-50%, -50%) scale(0.5);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(2);
+                opacity: 0;
+            }
+        }
+
+        .logo-box {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-family: 'Sarabun', sans-serif;
+            font-weight: bold;
+            color: #333;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sync-badge">
+        <i class="fas fa-sync fa-spin"></i>
+        <span>ระบบแผนที่คู่ขนาน (Connected)</span>
+    </div>
+
+    <div class="logo-box">
+        <i class="fa-solid fa-landmark text-primary"></i> ระบบบริหารจัดการที่ดินราชพัสดุ
+    </div>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // ใช้ Google Hybrid เป็นพื้นหลังสำหรับประชาชน (ชัดเจนที่สุด)
+        const map = L.map('map', {
+            zoomControl: true,
+            attributionControl: false
+        }).setView([17.221, 102.427], 13);
+
+        L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22 }).addTo(map);
+
+        const mapChannel = new BroadcastChannel('map_sync');
+        let ghostCursor = null;
+
+        mapChannel.onmessage = (e) => {
+            const data = e.data;
+            if (data.type === 'move') {
+                // ซิงค์ตำแหน่งและซูม (ใช้ระยะเวลาสั้นๆ เพื่อให้ดูสมูท)
+                map.setView(data.center, data.zoom, { animate: true, duration: 0.25 });
+            } else if (data.type === 'hover') {
+                // ซิงค์ตำแหน่งเมาส์ของเจ้าหน้าที่
+                if (!ghostCursor) {
+                    ghostCursor = L.marker(data.latlng, {
+                        icon: L.divIcon({
+                            className: 'ghost-cursor-wrap',
+                            html: '<div class="ghost-cursor"></div>',
+                            iconSize: [24, 24],
+                            iconAnchor: [12, 12]
+                        }),
+                        interactive: false,
+                        zIndexOffset: 10000
+                    }).addTo(map);
+                } else {
+                    ghostCursor.setLatLng(data.latlng);
+                }
+            } else if (data.type === 'close') {
+                window.close();
+            }
+        };
+
+        // บอกหน้าจอหลักว่าพร้อมแล้ว
+        mapChannel.postMessage({ type: 'ready' });
+    </script>
+</body>
+
+</html>
