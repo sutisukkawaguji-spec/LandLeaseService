@@ -284,7 +284,8 @@
                     </div>
 
                     <div class="row g-2 border-bottom pb-3">
-                        <div class="col-12"><label class="sub-label">ข้าพเจ้า (ชื่อ-สกุล)</label><input type="text"
+                        <div class="col-12"><label class="sub-label">ข้าพเจ้า (ชื่อ-สกุล) <span
+                                    class="text-danger">*</span></label><input type="text"
                                 class="form-control form-control-sm fw-bold" id="inv_name"></div>
                         <div class="col-2"><label class="sub-label">อายุ</label><input type="number"
                                 class="form-control form-control-sm" id="inv_age"></div>
@@ -296,7 +297,8 @@
                                 class="form-control form-control-sm" id="inv_nation" value="ไทย"></div>
 
                         <div class="col-12 mt-2"><span class="sub-label text-muted">ที่อยู่ปัจจุบัน</span></div>
-                        <div class="col-3"><label class="sub-label">บ้านเลขที่</label><input type="text"
+                        <div class="col-3"><label class="sub-label">บ้านเลขที่ <span
+                                    class="text-danger">*</span></label><input type="text"
                                 class="form-control form-control-sm" id="inv_addr_no"></div>
                         <div class="col-3"><label class="sub-label">หมู่ที่</label><input type="text"
                                 class="form-control form-control-sm" id="inv_addr_moo"></div>
@@ -304,11 +306,14 @@
                                 class="form-control form-control-sm" id="inv_addr_ban"></div>
                         <div class="col-4"><label class="sub-label">ถนน</label><input type="text"
                                 class="form-control form-control-sm" id="inv_addr_road"></div>
-                        <div class="col-4"><label class="sub-label">ตำบล</label><input type="text"
+                        <div class="col-4"><label class="sub-label">ตำบล <span
+                                    class="text-danger">*</span></label><input type="text"
                                 class="form-control form-control-sm" id="inv_addr_tambon"></div>
-                        <div class="col-4"><label class="sub-label">อำเภอ</label><input type="text"
+                        <div class="col-4"><label class="sub-label">อำเภอ <span
+                                    class="text-danger">*</span></label><input type="text"
                                 class="form-control form-control-sm" id="inv_addr_amphoe"></div>
-                        <div class="col-6"><label class="sub-label">จังหวัด</label><input type="text"
+                        <div class="col-6"><label class="sub-label">จังหวัด <span
+                                    class="text-danger">*</span></label><input type="text"
                                 class="form-control form-control-sm" id="inv_addr_prov"></div>
                     </div>
 
@@ -316,11 +321,14 @@
                     <div class="row g-2">
                         <div class="col-4"><label class="sub-label">ตั้งอยู่หมู่ที่</label><input type="text"
                                 class="form-control form-control-sm" id="inv_1_moo"></div>
-                        <div class="col-4"><label class="sub-label">ตำบล</label><input type="text"
+                        <div class="col-4"><label class="sub-label">ตำบล <span
+                                    class="text-danger">*</span></label><input type="text"
                                 class="form-control form-control-sm" id="inv_1_tambon"></div>
-                        <div class="col-4"><label class="sub-label">อำเภอ</label><input type="text"
+                        <div class="col-4"><label class="sub-label">อำเภอ <span
+                                    class="text-danger">*</span></label><input type="text"
                                 class="form-control form-control-sm" id="inv_1_amphoe"></div>
-                        <div class="col-12"><label class="sub-label">จังหวัด</label><input type="text"
+                        <div class="col-12"><label class="sub-label">จังหวัด <span
+                                    class="text-danger">*</span></label><input type="text"
                                 class="form-control form-control-sm" id="inv_1_prov"></div>
 
                         <div class="col-6"><label class="sub-label">ทิศเหนือ จด</label><input type="text"
@@ -483,6 +491,15 @@
                 <div id="map-container">
                     <div id="map"></div>
 
+                    <div class="map-controls-container"
+                        style="position: absolute; top: 10px; left: 50px; z-index: 1000;">
+                        <button class="btn btn-sm btn-outline-primary bg-white shadow-sm fw-bold"
+                            style="border: 2px solid #0d6efd;" onclick="openParallelMap()"
+                            title="เปิดจอแผนที่คู่ขนานสำหรับประชาชน">
+                            <i class="fa-solid fa-desktop"></i> จอแผนที่คู่ขนาน
+                        </button>
+                    </div>
+
                     <div id="overlap_alert" class="alert-overlap">
                         <strong class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i>
                             ทับซ้อนแปลงระบบ:</strong>
@@ -492,7 +509,8 @@
                     <div class="coords-box">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <small class="fw-bold text-muted">พิกัดจุดที่รับคำร้องปักไว้ (Lat/Lng):</small><br>
+                                <small class="fw-bold text-muted">พิกัดจุดที่รับคำร้องปักไว้ (Lat/Lng) <span
+                                        class="text-danger">*</span>:</small><br>
                                 <span id="ref_coords" class="text-danger fw-bold">-</span>
                             </div>
                         </div>
@@ -513,7 +531,8 @@
                         <div class="small mt-1"><b>เลข ปชช.:</b> <span id="ref_cid">-</span></div>
                         <div class="small mt-1">อายุ: <span id="ref_age">-</span> ปี | อาชีพ: <span
                                 id="ref_job">-</span></div>
-                        <div class="small mt-1">โทร: <span id="ref_phone">-</span></div>
+                        <div class="small mt-1">โทร <span class="text-danger">*</span>: <span id="ref_phone">-</span>
+                        </div>
                         <div class="small mt-1 text-muted"><b>ที่อยู่แจ้งไว้:</b> <span id="ref_address">-</span></div>
                         <div class="small mt-1 text-primary"><b>วันที่ยื่น:</b> <span id="ref_date">-</span></div>
                         <hr class="my-2">
@@ -537,10 +556,11 @@
     </div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="config.js"></script>
     <script>
         // --- ตั้งค่า URL ---
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxaZu6t_xT89qbGV612-Q8Ng_d-FqJ5V3QAoAwqsT5k9cg4O5iK_OlTTtcTXXgAzQXz/exec';
-        const LOCAL_API = 'http://127.0.0.1:5000';
+        const GAS_URL = CONFIG.GAS_URL;
+        const LOCAL_API = CONFIG.LOCAL_API;
 
         let map, marker, layerControl, queueData = [];
         let allLayers = []; // เก็บเลเยอร์แผนที่ไว้ตรวจการทับซ้อน
@@ -549,10 +569,52 @@
             initMap();
             document.getElementById('inv_date').valueAsDate = new Date();
             initResizers(); // Initialize resizers
+            initAutocomplete(); // เริ่มระบบช่วยจดจำการกรอก
 
-            // ปิด autocomplete ทุกช่อง
+            // ปิด autocomplete พื้นฐานของบราวเซอร์
             document.querySelectorAll('input, form').forEach(el => el.setAttribute('autocomplete', 'off'));
         });
+
+        // --- ระบบ Autocomplete จดจำรายการที่กรอกบ่อย/ล่าสุด ---
+        function initAutocomplete() {
+            const formInputs = document.querySelectorAll('#inv_form input[type="text"]:not([readonly])');
+            formInputs.forEach(input => {
+                const dlId = 'list_' + input.id;
+                let datalist = document.getElementById(dlId);
+                if (!datalist) {
+                    datalist = document.createElement('datalist');
+                    datalist.id = dlId;
+                    document.body.appendChild(datalist);
+                }
+                input.setAttribute('list', dlId);
+
+                updateDatalist(input.id);
+
+                input.addEventListener('blur', () => {
+                    saveToHistory(input.id, input.value.trim());
+                });
+            });
+        }
+
+        function saveToHistory(id, value) {
+            if (!value || value === "-" || value.length < 2) return;
+            let history = JSON.parse(localStorage.getItem('hist_' + id) || '[]');
+            history = history.filter(v => v !== value);
+            history.unshift(value);
+            localStorage.setItem('hist_' + id, JSON.stringify(history.slice(0, 10)));
+            updateDatalist(id);
+        }
+
+        function openParallelMap() {
+            window.open('public_map.html', 'PublicMap', 'width=1000,height=800');
+        }
+
+        function updateDatalist(id) {
+            const datalist = document.getElementById('list_' + id);
+            if (!datalist) return;
+            const history = JSON.parse(localStorage.getItem('hist_' + id) || '[]');
+            datalist.innerHTML = history.slice(0, 3).map(v => `<option value="${v}">`).join('');
+        }
 
         // --- 1. แผนที่ (ขวามือ) ---
         function initMap() {
@@ -564,6 +626,24 @@
             const baseMaps = { "แผนที่ถนน": street, "ดาวเทียม": hybrid };
             const overlayMaps = {};
             layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+            // --- ระบบแผนที่คู่ขนาน (Parallel Map Sync) ---
+            const mapChannel = new BroadcastChannel('map_sync');
+
+            map.on('moveend zoomend', () => {
+                mapChannel.postMessage({
+                    type: 'move',
+                    center: map.getCenter(),
+                    zoom: map.getZoom()
+                });
+            });
+
+            map.on('mousemove', (e) => {
+                mapChannel.postMessage({
+                    type: 'hover',
+                    latlng: e.latlng
+                });
+            });
 
             // ให้แสดงทีละ 1 เลเยอร์ (เมื่อผู้ใช้ติ๊กเลือกเลเยอร์ใหม่ ให้ซ่อนเลเยอร์เก่า)
             map.on('overlayadd', function (e) {
@@ -582,7 +662,26 @@
                 }, 10);
             });
 
+            // ดักจับการคลิกบนแผนที่ (เพื่อให้สามารถย้ายหมุดถัดจากการยื่นคำร้องได้)
+            map.on('click', e => {
+                placeMarker(e.latlng);
+                checkOverlap(e.latlng);
+            });
+
             loadGeoJSONLayers();
+        }
+
+        function placeMarker(latlng) {
+            if (marker) map.removeLayer(marker);
+            marker = L.marker(latlng, { draggable: true }).addTo(map);
+            document.getElementById('ref_coords').innerText = latlng.lat.toFixed(6) + ", " + latlng.lng.toFixed(6);
+
+            // เมื่อลากหมุด ให้ตรวจสอบการทับซ้อนใหม่
+            marker.on('dragend', function (event) {
+                let pos = event.target.getLatLng();
+                document.getElementById('ref_coords').innerText = pos.lat.toFixed(6) + ", " + pos.lng.toFixed(6);
+                checkOverlap(pos);
+            });
         }
 
         // สุ่มสีเส้นขอบแผนที่
@@ -922,6 +1021,9 @@
             data['chk_5_1'] = document.getElementById('chk_5_1').checked ? "/" : " ";
             data['chk_5_2'] = document.getElementById('chk_5_2').checked ? "/" : " ";
 
+            // เก็บพิกัดจากหน้าจอ
+            data.coords = document.getElementById('ref_coords').innerText || "-";
+
             // กำหนด action สำหรับ GAS
             data.action = 'save_investigation';
             return data;
@@ -931,33 +1033,71 @@
             let data = gatherData();
             if (data.inv_name === "-") return Swal.fire('เตือน', 'กรุณาเลือกคิวงานด้านซ้ายก่อน', 'warning');
 
+            // --- การบังคับกรอกข้อมูล (Validation) ---
+            if (data.inv_addr_no === "-" || data.inv_addr_tambon === "-" || data.inv_addr_amphoe === "-") {
+                return Swal.fire('ข้อมูลไม่ครบ', 'กรุณาระบุที่อยู่ปัจจุบัน (เลขที่/ตำบล/อำเภอ) ของผู้ถูกสอบสวน', 'warning');
+            }
+
+            let currentPhone = document.getElementById('ref_phone').innerText;
+            if (currentPhone === "-" || currentPhone === "") {
+                return Swal.fire('ไม่มีเบอร์โทรศัพท์', 'กรุณาตรวจสอบเบอร์โทรศัพท์ติดต่อในระบบเดิม (หรือแก้ไขในหน้าคำร้องถ้าจำเป็น)', 'warning');
+            }
+
+            if (data.coords === "ไม่ได้ปักหมุด" || data.coords === "-" || data.coords === "0.000, 0.000") {
+                return Swal.fire('ยังไม่ได้ปักหมุด', 'กรุณาปักหมุดตำแหน่งพิกัดแปลงที่ดินบนแผนที่ก่อนบันทึกการสอบสวน', 'warning');
+            }
+
             // แนวนโยบายใหม่: ตรวจสอบ Option ที่ผู้ใช้กดมาจากปุ่ม
             data.status = statusOption;
 
             Swal.fire({ title: 'กำลังบันทึก...', text: `อัปโหลดสถานะ: ${statusOption}`, didOpen: () => Swal.showLoading() });
 
-            // 1. ส่งให้ Google Sheet (Online)
-            fetch(GAS_URL, {
-                method: 'POST',
-                mode: 'no-cors', // สำคัญมาก เพื่อไม่ให้ติด CORS Block
-                body: JSON.stringify(data)
-            })
-                .then(() => {
-                    Swal.fire({
-                        title: 'สำเร็จ',
-                        text: 'บันทึกออนไลน์เรียบร้อยแล้ว ระบบกำลังอัปเดตคิว...',
-                        icon: 'success',
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
-
-                    setTimeout(() => {
-                        loadQueueFromSheet(); // โหลดคิวใหม่เพื่ออัปเดตสถานะ (ไม่ต้องล้างฟอร์ม เผื่ออยากปริ้น PDF ต่อ)
-                    }, 2500);
+            const executeSave = () => {
+                fetch(GAS_URL, {
+                    method: 'POST',
+                    mode: 'no-cors', // สำคัญมาก เพื่อไม่ให้ติด CORS Block
+                    body: JSON.stringify(data)
                 })
-                .catch(err => {
-                    Swal.fire('Error', 'การเชื่อมต่อผิดพลาด: ' + err, 'error');
+                    .then(() => {
+                        Swal.fire({
+                            title: 'สำเร็จ',
+                            text: 'บันทึกออนไลน์เรียบร้อยแล้ว ระบบกำลังอัปเดตคิว...',
+                            icon: 'success',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+
+                        setTimeout(() => {
+                            loadQueueFromSheet(); // โหลดคิวใหม่เพื่ออัปเดตสถานะ
+                        }, 2500);
+                    })
+                    .catch(err => {
+                        Swal.fire('Error', 'การเชื่อมต่อผิดพลาด: ' + err, 'error');
+                    });
+            };
+
+            // ตรวจสอบกรณีบันทึกซ้ำ (เช็คจากประวัติที่มีอยู่)
+            let caseId = document.getElementById('case_id').value;
+            let existing = queueData.find(x => x.id === caseId);
+            if (existing && (existing.status === 'สอบสวนสิทธิเสร็จสิ้น' || existing.status === 'ไม่สมบูรณ์')) {
+                Swal.fire({
+                    title: 'บันทึกซ้ำ?',
+                    text: `คิวงาน ${caseId} เคยมีการสอบสวนสิทธิไปแล้ว คุณต้องการบันทึกทับข้อมูลเดิมหรือไม่?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'ตกลง (บันทึกทับ)',
+                    cancelButtonText: 'ยกเลิก',
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33'
+                }).then((r) => {
+                    if (r.isConfirmed) {
+                        Swal.fire({ title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading() });
+                        executeSave();
+                    }
                 });
+            } else {
+                executeSave();
+            }
         }
 
         function printPDF() {
