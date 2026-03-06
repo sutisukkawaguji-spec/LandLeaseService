@@ -31,9 +31,14 @@
             overflow: hidden;
         }
 
+        .container-fluid {
+            height: 100vh;
+        }
+
         /* 3-Column Layout */
         .col-sidebar {
             width: 320px;
+            height: 100vh;
             background: white;
             border-right: 1px solid #ddd;
             display: flex;
@@ -59,9 +64,10 @@
             position: relative;
         }
 
-        /* Lists & Scrollbars */
         #req_list {
+            flex: 1;
             overflow-y: auto;
+            min-height: 0;
         }
 
         .list-group-item {
@@ -77,16 +83,21 @@
         }
 
         ::-webkit-scrollbar {
-            width: 6px;
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #ccc;
-            border-radius: 4px;
+            background: #adb5bd;
+            border-radius: 5px;
+            border: 2px solid #f1f1f1;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: #999;
+            background: #6c757d;
         }
 
         /* Map Space */
@@ -127,6 +138,50 @@
             margin-bottom: 20px;
         }
 
+        .day-group-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            overflow: hidden;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .day-group-header {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            font-weight: bold;
+            border-bottom: 1px solid #dee2e6;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .day-group-header:hover {
+            background: #e9ecef;
+        }
+
+        .nav-tabs-custom {
+            margin-bottom: 15px;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .nav-tabs-custom .nav-link {
+            border: none;
+            color: #6c757d;
+            font-weight: 500;
+            padding: 10px 20px;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .nav-tabs-custom .nav-link.active {
+            color: #0d6efd;
+            background: none;
+            border-bottom: 2px solid #0d6efd;
+        }
+
         .time-slot {
             font-weight: bold;
             color: #0d6efd;
@@ -153,8 +208,9 @@
                 border: none !important;
                 border-bottom: 2px solid #ddd !important;
                 flex: none !important;
-                height: 500px;
-                /* Fixed scrollable block height per section on mobile */
+                height: calc(100vh - 120px);
+                /* Adjust for nav and padding */
+                overflow-y: auto;
             }
 
             .resizer {
@@ -253,6 +309,102 @@
                 height: 60vh !important;
                 min-height: 400px;
             }
+
+            .hover-copy {
+                cursor: pointer;
+                transition: color 0.2s;
+            }
+
+            .hover-copy:hover {
+                color: #0d6efd !important;
+                text-decoration: underline;
+            }
+
+            .hover-row:hover {
+                background-color: rgba(13, 110, 253, 0.05);
+            }
+
+            /* สถานะรังวัดแล้วให้เป็นสีเทา */
+            .row-surveyed {
+                background-color: #f1f3f5 !important;
+                color: #adb5bd !important;
+                pointer-events: none;
+                /* ป้องกันการแก้ไขซ้ำซ้อนถ้าต้องการ */
+            }
+
+            .row-surveyed a,
+            .row-surveyed select {
+                color: #adb5bd !important;
+                border-color: #dee2e6 !important;
+            }
+
+            /* ปรับแต่งช่องกรอกข้อมูลให้เหมาะกับมือถือ */
+            input[type="date"],
+            input[type="time"],
+            select {
+                min-height: 45px;
+                font-size: 1rem !important;
+            }
+
+            .btn-sm {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+
+            .locate-btn {
+                position: absolute;
+                bottom: 80px;
+                right: 10px;
+                z-index: 1000;
+                background: white;
+                border: 2px solid rgba(0, 0, 0, 0.2);
+                border-radius: 4px;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            }
+
+            .location-pulse {
+                width: 12px;
+                height: 12px;
+                background: #2196F3;
+                border: 2px solid white;
+                border-radius: 50%;
+                box-shadow: 0 0 0 8px rgba(33, 150, 243, 0.3);
+                animation: pulse 2s infinite;
+            }
+
+            @keyframes pulse {
+                0% {
+                    box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.4);
+                }
+
+                70% {
+                    box-shadow: 0 0 0 10px rgba(33, 150, 243, 0);
+                }
+
+                100% {
+                    box-shadow: 0 0 0 0 rgba(33, 150, 243, 0);
+                }
+            }
+
+            @media (max-width: 768px) {
+                .col-main {
+                    padding: 10px !important;
+                }
+
+                .schedule-card {
+                    padding: 10px !important;
+                }
+
+                .input-group-text {
+                    font-size: 0.8rem;
+                }
+            }
         }
     </style>
 </head>
@@ -282,10 +434,27 @@
                     <button class="btn btn-sm btn-outline-dark w-100 mb-2" onclick="loadQueueFromSheet()">
                         <i class="fa-solid fa-rotate"></i> โหลดข้อมูลล่าสุด
                     </button>
-                    <input type="text" class="form-control form-control-sm" id="search_box"
-                        placeholder="กรองชื่อ, พื้นที่..." onkeyup="filterList()">
+                    <div class="d-flex gap-1 mb-2">
+                        <input type="text" class="form-control form-control-sm" id="search_box"
+                            placeholder="กรองชื่อ, พื้นที่..." onkeyup="filterList()">
+                        <button class="btn btn-sm btn-outline-primary" onclick="pullUnassigned()"
+                            title="ดึงคิวค้างนัดมาเติม">
+                            <i class="fa-solid fa-cloud-arrow-down"></i> ดึงคิวค้างนัด
+                        </button>
+                        <button class="btn btn-sm btn-outline-success" onclick="distributeRemainingTime()"
+                            title="เติมงานในเวลาที่เหลือของวัน">
+                            <i class="fa-solid fa-clock-rotate-left"></i> เติมงานเวลาว่าง
+                        </button>
+                        <button class="btn btn-sm btn-primary" onclick="selectAll()" title="เลือกทั้งหมดที่แสดง">
+                            <i class="fa-solid fa-check-double"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deselectAll()" title="ล้างการเลือก">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
                 </div>
-                <div class="list-group list-group-flush flex-grow-1" id="req_list">
+                <div class="list-group list-group-flush flex-grow-1 custom-scrollbar" id="req_list"
+                    style="overflow-y: auto;">
                     <div class="text-center p-3 text-muted">กำลังดึงข้อมูล...</div>
                 </div>
             </div>
@@ -294,90 +463,166 @@
 
             <!-- 2. Main Center (จัดการคิวลงตารางรังวัด) -->
             <div class="col-main" id="col-main">
-                <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-                    <h5 class="text-dark fw-bold mb-0">
-                        <button class="btn btn-sm btn-outline-secondary me-2"
-                            onclick="window.location.href='index.html'">
-                            <i class="fa-solid fa-arrow-left"></i> หน้าหลัก
-                        </button>
-                        <i class="fa-solid fa-calendar-days"></i> จัดตารางนัดหมายประจำวัน
-                    </h5>
-                    <div class="d-flex gap-2 align-items-center">
-                        <label class="small text-muted mb-0">ดูแผนของวันที่:</label>
-                        <input type="date" class="form-control form-control-sm" id="view_date">
-                        <button class="btn btn-sm btn-primary" onclick="loadSavedSchedule()">
-                            <i class="fa-solid fa-search"></i> เรียกดูแผน
-                        </button>
-                    </div>
-                </div>
+                <div class="tab-content h-100">
+                    <!-- Tab 1: แผนประจำวัน (งานโทร/นัด/ปึกหมุด) -->
+                    <div class="tab-pane fade show active p-0" id="plan-pane" role="tabpanel">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="text-dark fw-bold mb-0">
+                                <button class="btn btn-sm btn-outline-secondary me-2"
+                                    onclick="window.location.href='index.html'">
+                                    <i class="fa-solid fa-arrow-left"></i> หน้าหลัก
+                                </button>
+                                <i class="fa-solid fa-calendar-days"></i> วางแผนประจำวัน
+                            </h5>
+                        </div>
 
-                <!-- Control Panel วางแผนเวลา -->
-                <div class="schedule-card mb-3">
-                    <div class="row g-2 align-items-end">
-                        <div class="col-md-2">
-                            <label class="form-label small fw-bold text-muted">วันที่ต้องการลงแผน</label>
-                            <input type="date" class="form-control form-control-sm" id="sched_date">
+                        <!-- Control Panel วางแผนเวลา -->
+                        <div class="schedule-card mb-3">
+                            <div class="bg-white p-3 rounded-3 shadow-sm mb-3 border-start border-4 border-primary">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-md-3">
+                                        <label class="form-label small fw-bold text-muted mb-1"><i
+                                                class="fa-solid fa-flag-checkered me-1 text-primary"></i>ช่วงวันราชการที่ได้รับมอบหมาย</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light">เริ่ม</span>
+                                            <input type="date" class="form-control" id="mission_start"
+                                                onchange="renderVisualCalendar()">
+                                            <span class="input-group-text bg-light">ถึง</span>
+                                            <input type="date" class="form-control" id="mission_end"
+                                                onchange="renderVisualCalendar()">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-9 text-end">
+                                        <span class="badge bg-light text-muted border py-2 px-3">
+                                            <i class="fa-solid fa-clock me-1 text-warning"></i>
+                                            <span
+                                                id="mission_status">กรุณาระบุช่วงวันราชการเพื่อเริ่มวางแผนข้ามวัน</span>
+                                            <button class="btn btn-xs btn-outline-primary ms-2 py-0"
+                                                onclick="showCalendarDashboard()" title="ดูแผนผังรายเดือน">
+                                                <i class="fa-solid fa-calendar-alt"></i> แดชบอร์ด
+                                            </button>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-2 align-items-end">
+                                <div class="col-md-2">
+                                    <label class="form-label mb-1 fw-bold text-muted">เลือกวันนัด (หลัก)</label>
+                                    <input type="date" class="form-control form-control-sm" id="survey_date"
+                                        onchange="loadSavedSchedule()">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold text-muted">เวลาเริ่ม - เลิก</label>
+                                    <div class="input-group input-group-sm">
+                                        <input type="time" class="form-control" id="sched_start" value="09:00">
+                                        <input type="time" class="form-control" id="sched_end" value="16:00">
+                                    </div>
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="form-label small fw-bold text-muted">พัก (ชม.)</label>
+                                    <input type="number" class="form-control form-control-sm" id="sched_break" value="1"
+                                        step="0.5">
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="form-label small fw-bold text-muted">นาที/แปลง</label>
+                                    <input type="number" class="form-control form-control-sm" id="avg_time" value="60">
+                                </div>
+                                <div class="col-md-1">
+                                    <label class="form-label small fw-bold text-muted">แปลง/วัน</label>
+                                    <input type="number" class="form-control form-control-sm" id="max_per_day"
+                                        value="5">
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-dark btn-sm w-100 fw-bold" onclick="calculateSchedule()">
+                                        <i class="fa-solid fa-calculator"></i> คำนวณคิว (Auto)
+                                    </button>
+                                </div>
+                                <div class="col-md-2">
+                                    <button class="btn btn-success btn-sm w-100 fw-bold" onclick="saveScheduleToDB()">
+                                        <i class="fa-solid fa-cloud-arrow-up"></i> บันทึกแผนงาน
+                                    </button>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label small fw-bold text-muted">เวลาเริ่มงาน</label>
-                            <input type="time" class="form-control form-control-sm" id="sched_start" value="09:00">
+
+                        <div
+                            class="bg-primary-subtle p-2 rounded-3 mb-2 border border-primary border-opacity-25 d-flex gap-2 align-items-center">
+                            <span class="small fw-bold text-primary text-nowrap"><i class="fa-solid fa-bolt"></i>
+                                ดึงงานด่วน:</span>
+                            <input type="text" class="form-control form-control-sm border-primary border-opacity-50"
+                                id="quick_add_input" list="unassigned_list" placeholder="ค้นชื่อ หรือ เลขคำร้อง..."
+                                onkeypress="if(event.key==='Enter') quickAddToday()">
+                            <datalist id="unassigned_list"></datalist>
+                            <button class="btn btn-primary btn-sm px-3 text-nowrap"
+                                onclick="quickAddToday()">ตกลง</button>
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label small fw-bold text-muted">เวลาเลิกงาน</label>
-                            <input type="time" class="form-control form-control-sm" id="sched_end" value="16:00">
+
+                        <div
+                            class="bg-warning-subtle p-2 rounded-3 mb-2 border border-warning border-opacity-25 d-flex gap-2 align-items-center">
+                            <span class="small fw-bold text-warning-emphasis text-nowrap"><i
+                                    class="fa-solid fa-plus-circle"></i> งานแทรกด่วน:</span>
+                            <input type="text" class="form-control form-control-sm border-warning border-opacity-50"
+                                id="manual_name" placeholder="ชื่อผู้ขอ..."
+                                onkeypress="if(event.key==='Enter') document.getElementById('manual_phone').focus()">
+                            <input type="text" class="form-control form-control-sm border-warning border-opacity-50"
+                                id="manual_phone" placeholder="เบอร์โทร..."
+                                onkeypress="if(event.key==='Enter') addManualTask()">
+                            <button class="btn btn-warning btn-sm px-3 text-nowrap fw-bold"
+                                onclick="addManualTask()">แทรกคิว</button>
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label small fw-bold text-muted">พักเที่ยง (ชม.)</label>
-                            <input type="number" class="form-control form-control-sm" id="sched_break" value="1"
-                                step="0.5">
+
+                        <div class="d-flex justify-content-between align-items-end mb-2 gap-3">
+                            <div class="flex-grow-1">
+                                <h6 class="fw-bold text-muted mb-1">รายการรังวัด <span class="badge bg-secondary"
+                                        id="selected_count">0 ราย</span></h6>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white border-end-0"><i
+                                            class="fa-solid fa-magnifying-glass text-muted"></i></span>
+                                    <input type="text" class="form-control form-control-sm border-start-0 ps-0"
+                                        id="search_scheduled" placeholder="ค้นหาชื่อ, เลขคำร้อง, แปลง ในตารางแผนงาน..."
+                                        onkeyup="renderScheduleTable()">
+                                </div>
+                            </div>
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-sm btn-outline-primary" onclick="distributeRemainingTime()"
+                                    title="เติมงานลงช่องว่างในวันนี้">
+                                    <i class="fa-solid fa-plus-circle"></i> เติมงานว่าง
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger" onclick="clearAllSchedulesDB()"
+                                    title="ยกเลิกนัดทุกรายการที่เลือก">
+                                    <i class="fa-solid fa-eraser"></i> ล้างนัดทั้งหมด
+                                </button>
+                                <button class="btn btn-sm btn-secondary" onclick="clearSchedule()">ล้างกระดาน</button>
+                            </div>
                         </div>
-                        <div class="col-md-2">
-                            <button class="btn btn-dark btn-sm w-100 fw-bold" onclick="calculateSchedule()">
-                                <i class="fa-solid fa-calculator"></i> คำนวณเวลา
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover align-middle" id="schedule_table">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 50px;" class="text-center">ลำดับ</th>
+                                        <th style="width: 100px;" class="text-center">เวลา</th>
+                                        <th>ผู้ขอเช่า</th>
+                                        <th>ข้อมูลติดต่อ / ปักหมุด</th>
+                                        <th style="width: 130px;" class="text-center">สถานะ</th>
+                                        <th style="width: 50px;" class="text-center">-</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="schedule_body">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted p-4">ยังไม่ได้เลือกรายการ หรือ
+                                            ยังไม่มีแผนในวันที่เลือก</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="mt-3 text-end">
+                            <button class="btn btn-primary fw-bold px-4" onclick="exportSchedule()">
+                                <i class="fa-solid fa-file-pdf"></i> ออกรายงานแผนงานข้ามวัน (PDF)
                             </button>
                         </div>
-                        <div class="col-md-2">
-                            <button class="btn btn-success btn-sm w-100 fw-bold" onclick="saveScheduleToDB()">
-                                <i class="fa-solid fa-cloud-arrow-up"></i> บันทึกแผน
-                            </button>
-                        </div>
                     </div>
-                </div>
-
-                <div class="d-flex justify-content-between align-items-end mb-2">
-                    <h6 class="fw-bold text-muted mb-0">รายการรังวัด <span class="badge bg-secondary"
-                            id="selected_count">0/10</span></h6>
-                    <button class="btn btn-sm btn-outline-danger"
-                        onclick="clearSchedule()">ล้างกระดาน/จัดแผนใหม่</button>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table table-bordered table-hover align-middle" id="schedule_table">
-                        <thead class="table-light">
-                            <tr>
-                                <th style="width: 50px;" class="text-center">ลำดับ</th>
-                                <th style="width: 100px;" class="text-center">เวลา</th>
-                                <th>ผู้ขอเช่า</th>
-                                <th>ข้อมูลติดต่อ</th>
-                                <th>ที่ตั้งแปลง</th>
-                                <th style="width: 130px;" class="text-center">สถานะ</th>
-                                <th style="width: 50px;" class="text-center">-</th>
-                            </tr>
-                        </thead>
-                        <tbody id="schedule_body">
-                            <tr>
-                                <td colspan="7" class="text-center text-muted p-4">ยังไม่ได้เลือกรายการ หรือ
-                                    ยังไม่มีแผนในวันที่เลือก</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="mt-auto pt-3 text-end border-top">
-                    <!-- TODO: Wire this to a save function -->
-                    <button class="btn btn-primary fw-bold px-4" onclick="exportSchedule()">
-                        <i class="fa-solid fa-file-pdf"></i> ออกรายงานแผนงาน (PDF)
-                    </button>
                 </div>
             </div>
 
@@ -388,7 +633,11 @@
                 <div class="p-2 bg-light border-bottom text-center fw-bold text-muted small">
                     <i class="fa-solid fa-location-dot"></i> จุดตั้งแปลงที่จะไปรังวัด
                 </div>
-                <div id="map"></div>
+                <div id="map">
+                    <div class="locate-btn" onclick="locateUser()" title="ตำแหน่งของฉัน">
+                        <i class="fa-solid fa-location-crosshairs text-primary"></i>
+                    </div>
+                </div>
 
                 <div class="p-2 border-top bg-white">
                     <div id="active_target_detail" class="small">
@@ -400,23 +649,38 @@
         </div>
     </div>
 
+
     <!-- Leaflet & App Scripts -->
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
 
+    <script src="config.js"></script>
     <script>
-        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxaZu6t_xT89qbGV612-Q8Ng_d-FqJ5V3QAoAwqsT5k9cg4O5iK_OlTTtcTXXgAzQXz/exec';
+        const GAS_URL = CONFIG.GAS_URL;
 
         let map;
         let queueData = [];
         let selectedQueue = []; // รายการคิวที่จะไปรังวัดวันนี้ (ตะกร้า)
-        let mapMarkers = [];    // เก็บ Marker ทั้งหมดที่พล็อตวันนี้
+        let mapMarkers = [];
+        let allLayers = []; // เก็บเลเยอร์แผนที่ไว้ตรวจการทับซ้อน
+        let layerControl;
+        let pinningTargetId = null; // เก็บ ID ที่กำลังถูกแก้พิกัด
+        let currentCalendarDate = new Date(); // สำหรับปฏิทิน
+        let lastFilteredList = []; // เก็บรายการล่าสุดที่แสดงใน Sidebar เพื่อใช้เลือกทีละหลายรายการ (Shift Selection)
+        let lastSelectedIndex = -1; // เก็บ Index ตัวล่าสุดที่คลิกเลือกใน Sidebar
+
+        // --- Utility: แปลง Date เป็น YYYY-MM-DD (Local Time) ---
+        function getDateStr(d) {
+            if (!d || isNaN(new Date(d).getTime())) return '-';
+            let dateObj = new Date(d);
+            return dateObj.getFullYear() + '-' + String(dateObj.getMonth() + 1).padStart(2, '0') + '-' + String(dateObj.getDate()).padStart(2, '0');
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             initResizers();
             initMap();
             loadQueueFromSheet();
-            document.getElementById('sched_date').valueAsDate = new Date();
+            document.getElementById('survey_date').valueAsDate = new Date();
 
             // ปิด autocomplete ทุกช่อง
             document.querySelectorAll('input, form').forEach(el => el.setAttribute('autocomplete', 'off'));
@@ -425,35 +689,91 @@
         // ==========================================
         // 1. Queue Management & Fetching
         // ==========================================
-        function loadQueueFromSheet() {
+        async function loadQueueFromSheet() {
             let list = document.getElementById('req_list');
-            list.innerHTML = '<div class="text-center p-3 text-muted">กำลังดึงข้อมูล...</div>';
+            list.innerHTML = '<div class="text-center p-3 text-muted"><i class="fas fa-spinner fa-spin"></i> กำลังดึงข้อมูล...</div>';
 
-            fetch(GAS_URL)
-                .then(r => r.json())
-                .then(data => {
-                    // กรองเอาเฉพาะข้อมูลที่มีสถานะ 'สอบสวนสิทธิแล้ว' หรือ 'สอบสวนสิทธิภายหลัง' 
-                    // เพื่อส่งมารอรังวัด
-                    queueData = data.filter(item =>
-                        item.status === 'สอบสวนสิทธิแล้ว' ||
-                        item.status === 'สอบสวนสิทธิภายหลัง' ||
-                        item.status === 'บันทึกเป็นร่าง' // สำหรับจิ้มเล่นตอนพัฒนา
-                    );
-                    filterList();
-                })
-                .catch(err => {
-                    list.innerHTML = `<div class="text-center p-3 text-danger">ไม่สามารถโหลดข้อมูลได้: ${err}</div>`;
+            try {
+                // เติมพารามิเตอร์ t เพื่อเลี่ยงการดึงข้อมูลจาก Cache ที่อาจมีปัญหา CORS ค้างอยู่
+                let fetchUrl = GAS_URL + (GAS_URL.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
+
+                const response = await fetch(fetchUrl);
+
+                if (!response.ok) throw new Error('HTTP error! status: ' + response.status);
+
+                const data = await response.json();
+
+                if (!Array.isArray(data)) {
+                    console.error('Invalid data format received:', data);
+                    throw new Error(typeof data === 'object' && data.message ? data.message : 'ข้อมูลจากเซิร์ฟเวอร์ไม่ใช่รูปแบบรายการ (Array)');
+                }
+
+                // เก็บข้อมูลทั้งหมดและ Normalize ข้อมูลเบื้องต้น
+                queueData = data.map(item => {
+                    item.id = String(item.id || item.req_id || '');
+                    item.name = String(item.name || item.req_name || '');
+
+                    // Normalize วันที่จาก Google Sheets ให้เข้ากับฝั่ง UI (YYYY-MM-DD)
+                    // ใช้ getDateStr เพื่อป้องกันปัญหา Timezone Shift (UTC vs Local)
+                    if (item.survey_date && item.survey_date !== '-') {
+                        item.survey_date = getDateStr(item.survey_date);
+                    }
+                    return item;
                 });
+
+                // กรองเฉพาะอันที่พร้อมวางแผนสำหรับรายการ "ตะกร้างาน" (Sidebar)
+                filterList();
+                loadSavedSchedule(); // Load today's or selected date's schedule
+                renderVisualCalendar(); // Update dashboard
+                updateQuickAddDatalist(); // Update the Quick Add dropdown options
+                AppLog('โหลดข้อมูลสำเร็จ', data.length + ' รายการ');
+            } catch (err) {
+                console.error('Fetch error:', err);
+                list.innerHTML = `<div class="text-center p-3 text-danger">
+                    <i class="fas fa-exclamation-triangle"></i><br>
+                    <strong>การเชื่อมต่อระบบฐานข้อมูล (GAS) ไม่ทำงาน</strong><br>
+                    <div class="mt-2 small text-muted text-start border p-2 bg-light">
+                        <b>สาเหตุ:</b> ${err.message}<br>
+                        <b>URL ที่ใช้:</b> <span class="text-break">${GAS_URL}</span>
+                    </div>
+                    <p class="mt-3 small">กรุณาตรวจสอบว่าแผนงาน Google Apps Script ถูก Deploy เป็น "ทุกคน (Anyone)" หรือยัง หรือตรวจสอบ Deployment ID ใน config.js</p>
+                </div>`;
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เชื่อมต่อฐานข้อมูลไม่ได้',
+                    html: `สาเหตุ: ${err.message}<br><br><small class="text-muted">โปรดตรวจสอบ Deployment ID ใน config.js หรือตรวจสอบอินเทอร์เน็ต</small>`,
+                    footer: '<a href="index.html">กลับหน้าหลัก</a>'
+                });
+            }
         }
 
-        function filterList() {
+        function filterList(forcedList) {
             let search = document.getElementById('search_box').value.toLowerCase();
             let list = document.getElementById('req_list');
             list.innerHTML = '';
 
-            let filtered = queueData.filter(item => {
-                let textToSearch = `${item.id} ${item.name} ${item.req_name} ${item.plot_id} ${item.plot_no}`.toLowerCase();
-                return textToSearch.includes(search);
+            // กรองเอาเฉพาะข้อมูลที่มีสถานะพร้อมรังวัด เพื่อแสดงในตะกร้าด้านซ้าย
+            let source = forcedList || queueData;
+            let filtered = source.filter(item => {
+                const status = (item.status || '').trim();
+                const hasDate = (item.survey_date && item.survey_date !== '-' && item.survey_date !== '');
+                const isInSelected = selectedQueue.find(q => q.id === item.id);
+
+                // รายการที่พร้อมรังวัด และยังไม่มีวันนัด และไม่อยู่ในกระดานที่กำลังเลือก
+                const isReady = status === '' ||
+                    status === '-' ||
+                    status === 'ยื่นคำร้องแล้ว' ||
+                    status === 'รับเรื่องแล้ว' ||
+                    status === 'สอบสวนสิทธิแล้ว' ||
+                    status === 'สอบสวนสิทธิภายหลัง' ||
+                    status === 'บันทึกเป็นร่าง' ||
+                    status === 'รอรังวัด' ||
+                    status === 'พร้อมรังวัด' ||
+                    status === 'เลื่อนนัด';
+
+                const textToSearch = `${item.id} ${item.name} ${item.req_name} ${item.plot_id} ${item.plot_no}`.toLowerCase();
+                return isReady && !hasDate && !isInSelected && textToSearch.includes(search);
             });
 
             document.getElementById('count_badge').innerText = filtered.length;
@@ -463,20 +783,55 @@
                 return;
             }
 
-            filtered.forEach(item => {
+            lastFilteredList = [...filtered];
+            filtered.forEach((item, idx) => {
                 let plotName = item.plot_no || item.plot_id || 'ไม่ระบุแปลง';
                 let reqName = item.req_name || item.name || 'ไม่ระบุชื่อ';
+                let status = (item.status || '').trim();
+
+                // ตรวจสอบความครบถ้วนของข้อมูล
+                let hasCoords = (item.coords && item.coords.includes(',') && !item.coords.includes('-,-') && item.coords !== '0,0' && item.coords !== '-');
+                let hasPhone = (item.req_phone || item.phone) && (item.req_phone || item.phone) !== '-';
+                let isComplete = hasCoords && hasPhone;
+
+                // สร้าง Badge เล็กๆ บอกสถานะ
+                let statusBadge = '';
+                if (status === 'รอรังวัด') statusBadge = '<span class="badge bg-info text-white" style="font-size:0.6rem">นัดแล้ว</span>';
+                else if (status === 'สอบสวนสิทธิแล้ว' || status === 'พร้อมรังวัด') statusBadge = '<span class="badge bg-success" style="font-size:0.6rem">พร้อมนัด</span>';
+                else if (status === 'ยื่นคำร้องแล้ว') statusBadge = '<span class="badge bg-secondary" style="font-size:0.6rem">ใหม่</span>';
+                else if (status) statusBadge = `<span class="badge bg-warning text-dark" style="font-size:0.6rem">${status}</span>`;
+
+                // แจ้งเตือนข้อมูลไม่ครบ
+                let incompleteBadge = '';
+                let warningBg = '';
+                let warningTitle = '';
+                if (!isComplete) {
+                    let missing = [];
+                    if (!hasCoords) missing.push("ขาดพิกัด");
+                    if (!hasPhone) missing.push("ขาดเบอร์โทร");
+                    incompleteBadge = `<span class="badge bg-danger ms-1" style="font-size:0.55rem" title="${missing.join(', ')}"><i class="fa-solid fa-triangle-exclamation"></i> ${missing[0]}</span>`;
+                    warningBg = 'border-start border-warning border-4';
+                    warningTitle = `ข้อมูลไม่ครบ: ${missing.join(', ')}`;
+                }
+
+                // ไฮไลต์รายการที่มีหมุด (Coordinates) ให้เด่นชัดในส่วนเตรียมวางแผน
+                let readyBg = hasCoords ? 'bg-success-subtle shadow-sm' : '';
 
                 // เช็คว่ารายการนี้ถูกเลือกหยิบเข้าตะกร้าไปแล้วหรือยัง
-                let isSelected = selectedQueue.find(q => q.id === item.id) ? 'bg-light border-primary' : '';
-                let icon = isSelected ? '<i class="fa-solid fa-check-circle text-success"></i>' : '<i class="fa-regular fa-circle text-muted"></i>';
+                let isSelected = selectedQueue.find(q => q.id === item.id) ? 'bg-primary-subtle border-primary border-2' : '';
+                let icon = isSelected ? '<i class="fa-solid fa-check-circle text-success"></i>' : (hasCoords ? '<i class="fa-solid fa-map-location-dot text-success"></i>' : '<i class="fa-solid fa-circle-exclamation text-warning"></i>');
 
                 list.innerHTML += `
-                <button class="list-group-item list-group-item-action ${isSelected}" onclick="toggleSelection('${item.id}')">
+                <button class="list-group-item list-group-item-action ${isSelected} ${readyBg} ${warningBg}" onclick="toggleSelection('${item.id}', event, ${idx})" title="${warningTitle}">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="text-truncate" style="max-width: 80%;">
-                            <strong class="text-dark">${reqName}</strong><br>
+                            <div class="d-flex align-items-center gap-1">
+                                <strong class="text-dark">${reqName}</strong>
+                                ${statusBadge}
+                                ${incompleteBadge}
+                            </div>
                             <small class="text-muted"><i class="fa-solid fa-map-pin"></i> ${plotName}</small>
+                            <small class="text-muted ms-2"><i class="fa-solid fa-phone"></i> ${formatPhone(item.req_phone || item.phone)}</small>
                         </div>
                         <div>${icon}</div>
                     </div>
@@ -484,28 +839,161 @@
             });
         }
 
+        // ฟังก์ชันเลือกทั้งหมด (เฉพาะที่ผ่านการกรอง)
+        function selectAll() {
+            let search = document.getElementById('search_box').value.toLowerCase();
+            let toSelect = queueData.filter(item => {
+                const status = (item.status || '').trim();
+                const isReady = status === '' || status === '-' || status === 'ยื่นคำร้องแล้ว' || status === 'รับเรื่องแล้ว' || status === 'สอบสวนสิทธิแล้ว' || status === 'สอบสวนสิทธิภายหลัง' || status === 'บันทึกเป็นร่าง' || status === 'รอรังวัด' || status === 'พร้อมรังวัด' || status === 'เลื่อนนัด';
+                const textToSearch = `${item.id} ${item.name} ${item.req_name} ${item.plot_id} ${item.plot_no}`.toLowerCase();
+                return isReady && textToSearch.includes(search);
+            });
+
+            toSelect.forEach(item => {
+                if (!selectedQueue.find(q => q.id === item.id)) {
+                    selectedQueue.push({ ...item, timeSlot: '-' });
+                }
+            });
+
+            filterList();
+            renderScheduleTable();
+            renderMapMarkers();
+
+            // แนะนำวันนัดที่ว่างที่สุดโดยอัตโนมัติ
+            if (selectedQueue.length > 0) {
+                setTimeout(suggestBestStartingDate, 500);
+            }
+        }
+
+        async function suggestBestStartingDate() {
+            let datePicker = document.getElementById('survey_date');
+            if (datePicker.value) return;
+
+            let mStart = document.getElementById('mission_start').value;
+            let checkDate = mStart ? new Date(mStart) : new Date();
+            if (!mStart) checkDate.setDate(checkDate.getDate() + 1);
+
+            let bestDate = null;
+            let minCount = 999;
+
+            for (let i = 0; i < 30; i++) {
+                let day = checkDate.getDay();
+                if (day === 0 || day === 6) {
+                    checkDate.setDate(checkDate.getDate() + 1);
+                    continue;
+                }
+                let dateStr = checkDate.toISOString().split('T')[0];
+                let count = queueData.filter(q => q.survey_date === dateStr && q.status === 'รอรังวัด').length;
+                if (count < minCount) {
+                    minCount = count;
+                    bestDate = dateStr;
+                }
+                if (minCount === 0) break;
+                checkDate.setDate(checkDate.getDate() + 1);
+            }
+            if (bestDate) datePicker.value = bestDate;
+        }
+
+        function deselectAll() {
+            selectedQueue = [];
+            filterList();
+            renderScheduleTable();
+            renderMapMarkers();
+            renderVisualCalendar();
+        }
+
+        // ฟังก์ชันช่วยหา "วันนัดที่ว่างที่สุด" ถัดจากวันนี้
+        async function findBestDate(force = false) {
+            if (queueData.length === 0) return;
+
+            let datePicker = document.getElementById('survey_date');
+            if (datePicker.value && !force) return; // ถ้ามีค่าแล้วและไม่ได้บังคับ ไม่ต้องทำอะไร
+
+            // เริ่มหาวันถัดไป (พรุ่งนี้)
+            let checkDate = new Date();
+            checkDate.setDate(checkDate.getDate() + 1);
+
+            let bestDate = null;
+            let minCount = 999;
+
+            // ค้นหาล่วงหน้า 30 วัน
+            for (let i = 0; i < 30; i++) {
+                // ข้ามวันเสาร์-อาทิตย์
+                let day = checkDate.getDay();
+                if (day === 0 || day === 6) {
+                    checkDate.setDate(checkDate.getDate() + 1);
+                    continue;
+                }
+
+                let dateStr = checkDate.toISOString().split('T')[0];
+
+                // นับว่าคนอื่นจองวันนี้ไปกี่รายแล้ว (ไม่รวมคิวที่อยู่ในตะกร้าปัจจุบันถ้าเค้าจองวันนี้อยู่แล้ว)
+                let busyness = queueData.filter(q => {
+                    const status = (q.status || '');
+                    return q.survey_date === dateStr && status !== 'ยกเลิก';
+                }).length;
+
+                if (busyness < minCount) {
+                    minCount = busyness;
+                    bestDate = dateStr;
+                }
+
+                // ถ้าวันนี้ว่างมาก (จองไปไม่เกิน 1 ราย) ให้หยุดหาและเลือกวันนี้เลย
+                if (busyness <= 1) {
+                    bestDate = dateStr;
+                    break;
+                }
+
+                checkDate.setDate(checkDate.getDate() + 1);
+            }
+
+            if (bestDate) {
+                datePicker.value = bestDate;
+                loadSavedSchedule();
+
+                if (force) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'แนะนำวันนัด',
+                        text: `หาวันที่ว่างที่สุดให้แล้ว: ${bestDate} (มีคิวนัดอยู่แล้ว ${minCount} ราย)`,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    AppLog('แนะนำวันรังวัดที่ว่าง', bestDate);
+                }
+            }
+        }
+
         // ==========================================
         // 2. Selection & Basket Logic
         // ==========================================
-        function toggleSelection(id) {
-            let existingIndex = selectedQueue.findIndex(q => q.id === id);
+        function toggleSelection(id, event = null, currentIndex = -1) {
+            // รองรับการเลือกเป็นช่วง (Shift Selection)
+            if (event && event.shiftKey && lastSelectedIndex > -1 && currentIndex > -1) {
+                let start = Math.min(lastSelectedIndex, currentIndex);
+                let end = Math.max(lastSelectedIndex, currentIndex);
 
-            if (existingIndex > -1) {
-                // ถ้ามีอยู่แล้ว ให้เอาออก
-                selectedQueue.splice(existingIndex, 1);
-            } else {
-                // ถ้ายังไม่มี ลิมิตไว้ 10 โควต้าต่อวัน
-                if (selectedQueue.length >= 10) {
-                    Swal.fire('คำเตือน', 'จำนวนคิวแผนงานเต็มโควต้า (10 รายต่อวัน) แล้ว', 'warning');
-                    return;
+                for (let i = start; i <= end; i++) {
+                    let item = lastFilteredList[i];
+                    if (item && !selectedQueue.find(q => q.id === item.id)) {
+                        selectedQueue.push({ ...item, timeSlot: '-' });
+                    }
                 }
-
-                let target = queueData.find(q => q.id === id);
-                if (target) {
-                    // ยัดลงตะกร้าแบบเปล่าๆ รอคำนวณเวลา
-                    selectedQueue.push({ ...target, timeSlot: '-' });
+            } else {
+                // เลือกแบบปกติ หรือ Ctrl+Click (Toggle)
+                let existingIndex = selectedQueue.findIndex(q => q.id === id);
+                if (existingIndex > -1) {
+                    selectedQueue.splice(existingIndex, 1);
+                } else {
+                    let target = queueData.find(q => q.id === id);
+                    if (target) {
+                        selectedQueue.push({ ...target, timeSlot: '-' });
+                    }
                 }
             }
+
+            if (currentIndex > -1) lastSelectedIndex = currentIndex;
 
             filterList(); // รีเฟรชฝั่งซ้ายให้เช็คบ็อกซ์อัปเดต
             renderScheduleTable();
@@ -519,67 +1007,245 @@
             renderMapMarkers();
         }
 
-        function removeRow(id) {
-            selectedQueue = selectedQueue.filter(item => item.id !== id);
+        async function removeRow(id) {
+            const result = await Swal.fire({
+                title: 'ยืนยันนำออกจากตาราง?',
+                text: "รายการนี้จะถูกนำออกจากแผนและล้างวันที่/เวลานัดหมายออก (ถ้ามี) เพื่อกลับไปอยู่ที่ตะกร้างานฝั่งซ้าย",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'ยืนยัน',
+                cancelButtonText: 'ยกเลิก'
+            });
+
+            if (result.isConfirmed) {
+                let target = selectedQueue.find(q => q.id === id);
+                // ถ้าเป็นรายการที่เคยบันทึกลงฐานข้อมูลแล้ว (มีวันที่ที่ไม่ใช่ค่าว่าง) ต้องไปล้างใน DB ด้วย
+                if (target && target.survey_date && target.survey_date !== '-' && !target.is_temp) {
+                    executeReschedule(id, '-', '-');
+                } else {
+                    // ถ้าเป็นแค่รายการ Temp ในกระดาน แค่เอาออกจาก Array และ Refresh UI
+                    selectedQueue = selectedQueue.filter(item => item.id !== id);
+                    filterList();
+                    renderScheduleTable();
+                    renderMapMarkers();
+                }
+            }
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'success',
+                    title: 'คัดลอกเลขคำร้องแล้ว: ' + text,
+                    showConfirmButton: false,
+                    timer: 1500
+                });
+            });
+        }
+
+        function pullUnassigned(quiet = false) {
+            let toSelect = queueData.filter(item => {
+                const status = (item.status || '').trim();
+                const isReady = status === '' || status === '-' || status === 'ยื่นคำร้องแล้ว' || status === 'รับเรื่องแล้ว' || status === 'สอบสวนสิทธิแล้ว' || status === 'สอบสวนสิทธิภายหลัง' || status === 'บันทึกเป็นร่าง' || status === 'รอรังวัด' || status === 'พร้อมรังวัด' || status === 'เลื่อนนัด' || status === 'เลยกำหนด';
+                const hasNoDate = !item.survey_date || item.survey_date === '-' || item.survey_date === '';
+                return isReady && hasNoDate;
+            });
+
+            if (toSelect.length === 0) {
+                if (!quiet) Swal.fire('ข้อมูล', 'ไม่พบรายการที่ค้างนัด (รายการที่พร้อมแต่ยังไม่มีวันที่)', 'info');
+                return;
+            }
+
+            let added = 0;
+            toSelect.forEach(item => {
+                if (!selectedQueue.find(q => q.id === item.id)) {
+                    selectedQueue.push({ ...item, timeSlot: '-' });
+                    added++;
+                }
+            });
+
             filterList();
             renderScheduleTable();
             renderMapMarkers();
+
+            if (!quiet) Swal.fire('สำเร็จ', `ดึงรายการค้างนัดมาเพิ่มให้ ${added} รายการ`, 'success');
         }
 
         // ==========================================
         // 3. Time Allocation Algorithm
         // ==========================================
-        function calculateSchedule() {
-            if (selectedQueue.length === 0) return Swal.fire('เตือน', 'กรุณาเลือกคิวงานก่อนคำนวณเวลา', 'warning');
+        function timeStrToMins(str) {
+            if (!str) return 0;
+            let [h, m] = str.split(':').map(Number);
+            return (h * 60) + (m || 0);
+        }
 
-            let startStr = document.getElementById('sched_start').value;
-            let endStr = document.getElementById('sched_end').value;
-            let breakHours = parseFloat(document.getElementById('sched_break').value) || 0;
-
-            if (!startStr || !endStr) return Swal.fire('เตือน', 'กรุณาระบุเวลาเริ่มและเลิกงาน', 'warning');
-
-            // Parse text to minute values
-            let [sH, sM] = startStr.split(':').map(Number);
-            let [eH, eM] = endStr.split(':').map(Number);
-
-            let totalStartMin = (sH * 60) + sM;
-            let totalEndMin = (eH * 60) + eM;
-
-            let totalWorkDurationMin = (totalEndMin - totalStartMin) - (breakHours * 60);
-
-            if (totalWorkDurationMin <= 0) {
-                return Swal.fire('Error', 'เวลาเลิกงานต้องมากกว่าเวลาเริ่มงาน (รวมหักพักเที่ยงแล้ว)', 'error');
-            }
-
-            let queueCount = selectedQueue.length;
-            let minsPerTarget = Math.floor(totalWorkDurationMin / queueCount);
-
-            let currentPointer = totalStartMin;
-
-            // Loop Assign Timeslot
-            for (let i = 0; i < queueCount; i++) {
-                // ถือว่าพักเที่ยงตอนเที่ยง (720 นาที) ถ้าตัว Pointer กำลังข้ามช่วงเที่ยง ให้พักซะ
-                if (currentPointer < 720 && (currentPointer + minsPerTarget) >= 720) {
-                    // โดดข้ามเวลาพักเที่ยงไปเลย
-                    currentPointer += (breakHours * 60);
+        async function calculateSchedule(skipSorting = false) {
+            // ปรับปรุงใหม่: ถ้ากระดานว่างให้ดึงคิวทั้งหมด และจัดเรียงอัตโนมัติ (skipSorting = false)
+            // แต่ถ้ามีการเลือกมาแล้ว ให้จัดเวลาตามคิวนั้นๆ โดยไม่สับคิวใหม่ (skipSorting = true)
+            if (selectedQueue.length === 0) {
+                pullUnassigned(true); // ดึงค้างนัดมาเติมอัตโนมัติแบบเงียบ
+                if (selectedQueue.length === 0) {
+                    return Swal.fire('เตือน', 'กรุณาเลือกรายการจาก Sidebar หรือเพิ่มงานที่มีพิกัดก่อน', 'warning');
                 }
-
-                let slotStart = minsToTimeStr(currentPointer);
-                currentPointer += minsPerTarget;
-                let slotEnd = minsToTimeStr(currentPointer);
-
-                selectedQueue[i].timeSlot = `${slotStart} - ${slotEnd}`;
+                skipSorting = false; // ถ้าว่างและเพิ่งดึงมา ให้สลับเรียงอัจฉริยะได้เลย
+            } else {
+                // ถ้ามีรายการจองคิวไว้แล้ว ให้ "ข้ามการจัดเรียง (Skip Sorting)" เพื่อรักษาระดับที่ผู้ใช้เลือกไว้
+                skipSorting = true;
             }
 
+            // แสดง Popup กำลังประมวลผล (ป้องกันหน้าเว็บค้าง)
             Swal.fire({
-                title: 'คำนวณเสร็จสิ้น',
-                text: `ระบบได้จัดสรรคิวงาน ${queueCount} ราย โดยใช้เวลาเฉลี่ย ${minsPerTarget} นาที/ราย`,
-                icon: 'success',
-                timer: 2000,
-                showConfirmButton: false
+                title: skipSorting ? 'กำลังปรับปรุงเวลา...' : 'กำลังคำนวณเส้นทางอัจฉริยะ...',
+                html: skipSorting ? 'กำลังคำนวณเวลาเข้าตรวจรังวัดใหม่...' : 'กำลังวิเคราะห์พิกัดและจัดกลุ่มเบอร์โทร... <br><div class="progress mt-3" style="height: 20px;"><div id="calc-prog" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div></div>',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
             });
 
-            renderScheduleTable();
+            // ใช้ setTimeout เพื่อให้ Browser มีเวลา Render Popup ก่อนเริ่มงานหนัก
+            setTimeout(() => {
+                if (!skipSorting) {
+                    const totalItems = selectedQueue.length;
+                    let orderedList = [];
+                    let remaining = [...selectedQueue];
+                    let currentPoint = null;
+
+                    // Helper: หาระยะทาง
+                    const getDist = (c1, c2) => {
+                        if (!c1 || !c2) return Infinity;
+                        let [lat1, lon1] = c1.split(',').map(Number);
+                        let [lat2, lon2] = c2.split(',').map(Number);
+                        return Math.sqrt(Math.pow(lat1 - lat2, 2) + Math.pow(lon1 - lon2, 2));
+                    };
+
+                    // --- 1. Smart Sorting Search ---
+                    // --- 1. Area & Phone Grouping (Simplified) ---
+                    // จัดกลุ่มตามเบอร์โทร (เพื่อเอาผู้เช่าเดียวกันไว้ด้วยกัน)
+                    let tenantGroups = {};
+                    selectedQueue.forEach(item => {
+                        let p = formatPhone(item.req_phone || item.phone);
+                        if (!tenantGroups[p]) tenantGroups[p] = [];
+                        tenantGroups[p].push(item);
+                    });
+
+                    // แปลงเป็น List ของกลุ่ม และจัดเรียงกลุ่มตาม "พื้นที่ (Area)" และ "ลำดับก่อนหลัง (ID)"
+                    let sortedGroups = Object.values(tenantGroups).sort((groupA, groupB) => {
+                        let a = groupA[0]; // ใช้รายการแรกของกลุ่มเป็นตัวแทนพื้นที่
+                        let b = groupB[0];
+
+                        // 1. เรียงตามอำเภอ
+                        let ampA = (a.plot_amphoe || '').trim();
+                        let ampB = (b.plot_amphoe || '').trim();
+                        if (ampA !== ampB) return ampA.localeCompare(ampB, 'th');
+
+                        // 2. เรียงตามตำบล
+                        let tamA = (a.plot_tambon || '').trim();
+                        let tamB = (b.plot_tambon || '').trim();
+                        if (tamA !== tamB) return tamA.localeCompare(tamB, 'th');
+
+                        // 3. เรียงตามพิกัด (ถ้ามีหมุด) - ให้หมุดที่อยู่เหนือ (Lat มาก) ขึ้นก่อน
+                        let latA = a.coords ? parseFloat(a.coords.split(',')[0]) : 0;
+                        let latB = b.coords ? parseFloat(b.coords.split(',')[0]) : 0;
+                        if (latA !== latB) return latB - latA;
+
+                        // 4. เรียงตามเลขคำร้อง (ใครมาก่อนได้ก่อน)
+                        return String(a.id).localeCompare(String(b.id));
+                    });
+
+                    // แผ่ออกมาเป็นรายการเดียว
+                    selectedQueue = sortedGroups.flat();
+                }
+
+                // --- 2. Time Assignment ---
+                let startStr = document.getElementById('sched_start').value;
+                let endStr = document.getElementById('sched_end').value;
+                let breakHours = parseFloat(document.getElementById('sched_break').value) || 0;
+                let minsPerTarget = parseInt(document.getElementById('avg_time').value) || 60;
+                let maxPerDay = parseInt(document.getElementById('max_per_day').value) || 5;
+                let missionStart = document.getElementById('mission_start').value;
+                let missionEnd = document.getElementById('mission_end').value;
+                let surveyTargetDate = document.getElementById('survey_date').value;
+
+                if (!startStr || !endStr) {
+                    Swal.close();
+                    return Swal.fire('เตือน', 'กรุณาระบุเวลาเริ่มและเลิกงาน', 'warning');
+                }
+
+                let totalStartMin = timeStrToMins(startStr);
+                let totalEndMin = timeStrToMins(endStr);
+                let currentPointer = totalStartMin;
+
+                // กำหนดวันที่เริ่ม: ใช้ "วันเริ่มไปราชการ (mission_start)" เป็นหัวขบวนในการจัดแผน Auto
+                // ส่วน surveyTargetDate (วันนัดหลัก) มีไว้สำหรับเรียกดูข้อมูลรายวันที่บันทึกแล้วเท่านั้น
+                let currentD;
+                if (missionStart) {
+                    currentD = new Date(missionStart + 'T00:00:00');
+                } else if (surveyTargetDate) {
+                    currentD = new Date(surveyTargetDate + 'T00:00:00');
+                } else {
+                    currentD = new Date();
+                    currentD.setHours(0, 0, 0, 0);
+                }
+
+                let stopD = missionEnd ? new Date(missionEnd + 'T00:00:00') : null;
+                let dayTaskCount = 0;
+                let withinMissionCount = 0;
+                let outsideMissionCount = 0;
+
+                for (let i = 0; i < selectedQueue.length; i++) {
+                    while (currentD.getDay() === 0 || currentD.getDay() === 6) { currentD.setDate(currentD.getDate() + 1); }
+                    if (currentPointer + minsPerTarget > totalEndMin || dayTaskCount >= maxPerDay) {
+                        currentD.setDate(currentD.getDate() + 1);
+                        while (currentD.getDay() === 0 || currentD.getDay() === 6) { currentD.setDate(currentD.getDate() + 1); }
+                        currentPointer = totalStartMin;
+                        dayTaskCount = 0;
+                    }
+                    if (currentPointer < 720 && (currentPointer + minsPerTarget) > 720) { currentPointer += (breakHours * 60); }
+
+                    let slotStart = minsToTimeStr(currentPointer);
+                    let startVal = currentPointer;
+                    currentPointer += minsPerTarget;
+                    let slotEnd = minsToTimeStr(currentPointer);
+                    let dateStr = getDateStr(currentD);
+
+                    if (stopD && currentD > stopD) {
+                        outsideMissionCount++;
+                        selectedQueue[i].is_outside_mission = true;
+                    } else {
+                        withinMissionCount++;
+                        selectedQueue[i].is_outside_mission = false;
+                    }
+
+                    selectedQueue[i].survey_date = dateStr;
+                    selectedQueue[i].timeSlot = `${slotStart} - ${slotEnd}`;
+                    selectedQueue[i].is_temp = true;
+                    selectedQueue[i].startMin = startVal;
+                    selectedQueue[i].endMin = currentPointer;
+                    dayTaskCount++;
+                }
+
+                let summaryMsg = `จัดคิวทั้งหมด ${selectedQueue.length} รายการ เรียบร้อยแล้ว`;
+                let summaryIcon = 'success';
+                if (outsideMissionCount > 0) {
+                    summaryMsg = `จัดคิวครบ ${selectedQueue.length} รายการ <br><br>` +
+                        `<span class="text-success fw-bold">อยู่ในแผน: ${withinMissionCount} ราย</span><br>` +
+                        `<span class="text-danger fw-bold">เกินแผน: ${outsideMissionCount} ราย (เริ่มตั้งแต่ ${getDateStr(currentD)})</span>`;
+                    summaryIcon = 'warning';
+                }
+
+                Swal.fire({
+                    title: 'ผลการจัดแผนงาน',
+                    html: summaryMsg,
+                    icon: summaryIcon,
+                    confirmButtonText: 'รับทราบ'
+                });
+
+                renderScheduleTable();
+            }, 100);
         }
 
         function minsToTimeStr(totalMins) {
@@ -588,56 +1254,117 @@
             return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
         }
 
+        function formatPhone(val) {
+            if (!val || val === '-') return '-';
+            let s = String(val).trim();
+            let digits = s.replace(/[^0-9]/g, '');
+            // ถ้ามี 9 หลักและไม่ขึ้นด้วย 0 ให้เติม 0 ข้างหน้าต้นฉบับ
+            if (digits.length === 9 && !digits.startsWith('0')) return '0' + s;
+            return s;
+        }
+
         function renderScheduleTable() {
-            document.getElementById('selected_count').innerText = `${selectedQueue.length}/10`;
+            // เราจะแสดงรายการทั้งหมดที่อยู่ในกระดาน (selectedQueue) 
+            // ระบบจะจัดกลุ่มตามวันที่ให้อยู่แล้ว เพื่อให้เห็นภาพรวมแผนงานทั้งหมดที่กำลังวางแผน
+            let search = document.getElementById('search_scheduled') ? document.getElementById('search_scheduled').value.toLowerCase() : '';
+            let displayQueue = selectedQueue.filter(item => {
+                const textToSearch = `${item.id} ${item.name} ${item.req_name} ${item.plot_id} ${item.plot_no} ${item.survey_date}`.toLowerCase();
+                return textToSearch.includes(search);
+            });
+
+            document.getElementById('selected_count').innerText = `${displayQueue.length} ราย`;
             let tbody = document.getElementById('schedule_body');
             tbody.innerHTML = '';
 
-            if (selectedQueue.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-4">รอบริหารคิว</td></tr>`;
+            if (displayQueue.length === 0) {
+                let msg = search ? 'ไม่พบรายการที่ค้นหาในตาราง' : 'เลือกรายการจาก Sidebar เพื่อเริ่มจัดแผนงาน';
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted p-4"><i class="fa-solid fa-calendar-day fa-3x mb-2 d-block opacity-25"></i>${msg}</td></tr>`;
                 return;
             }
 
-            selectedQueue.forEach((item, index) => {
-                let reqName = item.req_name || item.name || '-';
-                let phone = item.req_phone || item.phone || '';
-                let callTime = item.last_called ? `<br><small class="text-muted"><i class="fa-regular fa-clock"></i> โทรล่าสุด: ${item.last_called}</small>` : '';
+            // Group items by date (in case we still want grouping headers for clarity)
+            let groups = {};
+            displayQueue.forEach(q => {
+                let d = q.survey_date && q.survey_date !== '-' ? q.survey_date : 'ยังไม่ระบุวันที่';
+                if (!groups[d]) groups[d] = [];
+                groups[d].push(q);
+            });
 
-                let phoneHTML = phone ? `<a href="tel:${phone}" class="text-decoration-none fw-bold" onclick="logCall('${item.id}')"><i class="fa-solid fa-phone"></i> ${phone}</a>${callTime}` : '-';
+            let sortedDates = Object.keys(groups).sort((a, b) => {
+                if (a === 'ยังไม่ระบุวันที่') return 1;
+                if (b === 'ยังไม่ระบุวันที่') return -1;
+                return a.localeCompare(b);
+            });
 
-                let loc = [];
-                if (item.plot_tambon) loc.push("ต." + item.plot_tambon);
-                if (item.plot_amphoe) loc.push("อ." + item.plot_amphoe);
-                let plotFull = (item.plot_no || item.plot_id || '') + ' ' + loc.join(' ');
-
-                let navHTML = '';
-                if (item.coords && item.coords.includes(',')) {
-                    navHTML = ` <a href="https://maps.google.com/?q=${item.coords}" target="_blank" class="btn btn-sm btn-outline-primary py-0 px-2 float-end" title="นำทาง"><i class="fa-solid fa-location-arrow"></i></a>`;
+            sortedDates.forEach(dateStr => {
+                let displayDate = dateStr;
+                if (dateStr !== 'ยังไม่ระบุวันที่') {
+                    try {
+                        displayDate = new Date(dateStr).toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                    } catch (e) { }
                 }
 
-                // Dropdown สถานะที่กดเปลี่ยนได้เลย
-                let currentStatus = item.status || 'รอรังวัด';
-                let statusHTML = `
-                    <select class="form-select form-select-sm" onchange="updateRowStatus('${item.id}', this.value)">
-                        <option value="รอรังวัด" ${currentStatus === 'รอรังวัด' ? 'selected' : ''}>รอรังวัด</option>
-                        <option value="รังวัดแล้ว" ${currentStatus === 'รังวัดแล้ว' ? 'selected' : ''}>รังวัดแล้ว</option>
-                        <option value="เลื่อนนัด" ${currentStatus === 'เลื่อนนัด' ? 'selected' : ''}>เลื่อนนัด</option>
-                        <option value="ยกเลิก" ${currentStatus === 'ยกเลิก' ? 'selected' : ''}>ยกเลิก</option>
-                    </select>
-                `;
+                // Add Row Header for Group
+                tbody.innerHTML += `<tr class="table-dark small"><td colspan="6" class="fw-bold"><i class="fa-solid fa-calendar-day me-2"></i> ${displayDate} (${groups[dateStr].length} รายการ)</td></tr>`;
 
-                tbody.innerHTML += `
-                <tr>
-                    <td class="text-center">${index + 1}</td>
-                    <td class="time-slot text-center">${item.timeSlot || item.survey_time || '-'}</td>
-                    <td><strong>${reqName}</strong><br><small class="text-muted">${item.id}</small></td>
-                    <td>${phoneHTML}</td>
-                    <td>${plotFull}${navHTML}</td>
-                    <td class="text-center">${statusHTML}</td>
-                    <td class="text-center">
-                        <button class="btn btn-sm btn-outline-danger py-0 px-2" onclick="removeRow('${item.id}')"><i class="fa-solid fa-xmark"></i></button>
-                    </td>
-                </tr>`;
+                let items = groups[dateStr];
+                // Sort by time within group
+                items.sort((a, b) => {
+                    let tA = (a.timeSlot || a.survey_time || '00:00').split(' - ')[0];
+                    let tB = (b.timeSlot || b.survey_time || '00:00').split(' - ')[0];
+                    return tA.localeCompare(tB);
+                });
+
+                items.forEach((item, index) => {
+                    let reqName = item.req_name || item.name || '-';
+                    let phone = formatPhone(item.req_phone || item.phone);
+                    let phoneHTML = phone !== '-' ? `<a href="tel:${phone}" class="text-decoration-none fw-bold" onclick="logCall('${item.id}')"><i class="fa-solid fa-phone"></i> ${phone}</a>` : '-';
+
+                    let hasCoords = (item.coords && item.coords.includes(',') && !item.coords.includes('-,-') && item.coords !== '0,0' && item.coords !== '-');
+
+                    let loc = [];
+                    if (item.plot_tambon) loc.push("ต." + item.plot_tambon);
+                    if (item.plot_amphoe) loc.push("อ." + item.plot_amphoe);
+                    let plotFull = loc.join(' ') || '-';
+
+                    let navHTML = hasCoords ? `<a href="https://www.google.com/maps?q=${item.coords}" target="_blank" class="btn btn-xs btn-outline-primary py-0 px-1 ms-1" onclick="event.stopPropagation()"><i class="fa-solid fa-location-arrow"></i> นำทาง</a>` : '';
+
+                    let pinBtnHTML = `<button class="btn btn-xs btn-outline-warning py-0 px-1 float-end" onclick="enablePinning('${item.id}')" title="จิ้มพิกัดใหม่"><i class="fa-solid fa-location-dot"></i></button>`;
+
+                    let statusHTML = `
+                        <select class="form-select form-select-sm" style="font-size:0.75rem" onchange="handleStatusChange('${item.id}', this.value)">
+                            <option value="รอรังวัด" ${item.status === 'รอรังวัด' ? 'selected' : ''}>รอรังวัด</option>
+                            <option value="รังวัดแล้ว" ${item.status === 'รังวัดแล้ว' ? 'selected' : ''}>รังวัดแล้ว</option>
+                            <option value="เลื่อนนัด" ${item.status === 'เลื่อนนัด' ? 'selected' : ''}>เลื่อนนัด</option>
+                            <option value="ยกเลิกนัด" ${item.status === 'ยกเลิกนัด' ? 'selected' : ''}>ล้างนัด</option>
+                        </select>`;
+
+                    let isDone = (item.status === 'รังวัดแล้ว' || item.status === 'เสร็จสิ้น');
+                    let rowClass = isDone ? 'row-surveyed' : 'cursor-pointer hover-row';
+
+                    let callBtnClass = item.last_called ? 'btn-success' : 'btn-outline-success';
+                    let callIcon = item.last_called ? '<i class="fa-solid fa-phone-flip"></i>' : '<i class="fa-solid fa-phone"></i>';
+                    let callBtn = `<button class="btn btn-xs ${callBtnClass} py-0 px-1 ms-1" onclick="event.stopPropagation(); markAsCalled('${item.id}')" title="${item.last_called ? 'โทรนัดแล้วเมื่อ: ' + item.last_called : 'บันทึกว่าโทรนัดแล้ว'}">${callIcon}</button>`;
+
+                    tbody.innerHTML += `
+                    <tr class="${rowClass}" onclick="focusOnPin('${item.id}')">
+                        <td class="text-center small">${index + 1}</td>
+                        <td class="text-center fw-bold text-primary">${item.timeSlot || item.survey_time || '-'}</td>
+                        <td class="small">
+                            <span class="fw-bold cursor-pointer text-dark hover-copy" onclick="event.stopPropagation(); copyToClipboard('${item.id}')" title="คลิกเพื่อคัดลอกเลขคำร้อง">
+                                ${reqName} ${item.last_called ? '<i class="fa-solid fa-check-circle text-success ms-1" style="font-size:0.7rem"></i>' : ''} <i class="fa-regular fa-copy opacity-50 ms-1" style="font-size:0.7rem"></i>
+                            </span>
+                            <br><small class="text-muted">${item.id}</small>
+                        </td>
+                        <td class="small" onclick="event.stopPropagation()">
+                            ${phoneHTML}${callBtn}<br>${plotFull}${navHTML}${pinBtnHTML}
+                        </td>
+                        <td class="text-center" onclick="event.stopPropagation()">${statusHTML}</td>
+                        <td class="text-center" onclick="event.stopPropagation()">
+                            <button class="btn btn-xs btn-outline-danger border-0" onclick="removeRow('${item.id}')"><i class="fa-solid fa-trash-can"></i></button>
+                        </td>
+                    </tr>`;
+                });
             });
         }
 
@@ -646,44 +1373,183 @@
         // ==========================================
         function saveScheduleToDB() {
             if (selectedQueue.length === 0) return Swal.fire('เตือน', 'ยังไม่มีคิวในกระดานรังวัด', 'warning');
-            let schedDate = document.getElementById('sched_date').value;
-            if (!schedDate) return Swal.fire('เตือน', 'กรุณาระบุวันที่ต้องการลงแผนก่อนบันทึก', 'warning');
+            let schedDate = document.getElementById('survey_date').value;
 
             // ตรวจสอบว่าทั้งหมดถูกคำนวณเวลาแล้ว
             let unassigned = selectedQueue.filter(q => !q.timeSlot || q.timeSlot === '-');
-            if (unassigned.length > 0) return Swal.fire('เตือน', 'กรุณากดปุ่ม "คำนวณเวลา" ให้ครบทุกรายการก่อนบันทึกแผน', 'warning');
+            if (unassigned.length > 0) return Swal.fire('เตือน', 'กรุณากดปุ่ม "คำนวณคิว (Auto)" ให้ครบทุกรายการก่อนบันทึกแผนงาน', 'warning');
 
-            Swal.fire({ title: 'กำลังบันทึกแผน...', didOpen: () => Swal.showLoading() });
+            Swal.fire({ title: 'กำลังบันทึกแผนงาน...', didOpen: () => Swal.showLoading() });
 
             let payload = {
                 action: 'save_survey_schedule',
-                survey_date: schedDate,
-                schedule: selectedQueue.map(q => ({ id: q.id, timeSlot: q.timeSlot }))
+                survey_date: schedDate || getDateStr(new Date()),
+                schedule: selectedQueue.map(q => {
+                    return {
+                        id: String(q.id),
+                        timeSlot: q.timeSlot,
+                        date: q.survey_date || schedDate // ตรวจสอบให้แน่ใจว่าแต่ละตัวมีวันที่ของตัวเอง
+                    };
+                })
             };
 
-            fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
+            fetch(GAS_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
                 .then(() => {
-                    Swal.fire('สำเร็จ', 'บันทึกแผนรังวัดลงฐานข้อมูลแล้ว ช่างสามารถเรียกดูแผนของวันนี้ได้เลย!', 'success');
-                    setTimeout(() => loadQueueFromSheet(), 2000); // refresh db state
+                    Swal.fire('สำเร็จ', 'บันทึกแผนงานลงฐานข้อมูลเรียบร้อยแล้ว!', 'success');
+                    // ล้างสถานะ temp ออกหลังจากบันทึกสำเร็จ
+                    selectedQueue.forEach(q => delete q.is_temp);
+                    setTimeout(() => loadQueueFromSheet(), 1500);
                 })
-                .catch(err => Swal.fire('Error', 'เซฟแผนพลาด: ' + err, 'error'));
+                .catch(err => {
+                    console.error(err);
+                    Swal.fire('Error', 'บันทึกพลาด: ' + err, 'error');
+                });
         }
 
         function loadSavedSchedule() {
-            let viewDate = document.getElementById('view_date').value;
-            if (!viewDate) return Swal.fire('เตือน', 'กรุณาเลือกวันที่ก่อนกดเรียกดูแผน', 'warning');
+            let date = document.getElementById('survey_date').value;
 
-            let savedItems = queueData.filter(q => q.survey_date === viewDate);
-            if (savedItems.length === 0) {
-                Swal.fire('ข้อมูล', 'ไม่พบแผนการออกรังวัดในวันที่ระบุ', 'info');
-            } else {
-                selectedQueue = [...savedItems];
-                // แปลงเวลาที่ดึงมาจาก survey_time เป็น timeSlot กลับมาแสดง
-                selectedQueue.forEach(q => q.timeSlot = q.survey_time || '-');
-                document.getElementById('sched_date').value = viewDate;
-                renderScheduleTable();
-                renderMapMarkers();
+            // เปลี่ยนจากแสดงแค่วันที่เลือก เป็นแสดง "ทุกรายการที่นัดแล้วและยังไม่รังวัด"
+            // แต่ยังรักษารายการที่กำลัง "รอจัดนัด" (is_temp) ไว้ด้วยในขณะวางแผน
+            let tempOnly = selectedQueue.filter(q => q.is_temp);
+
+            // ดึงรายการที่บันทึกไว้ทั้งหมด (ทุกวันที่นัดแล้ว) มาแสดง
+            let savedItems = queueData.filter(q => (q.survey_date && q.survey_date !== '-') && q.status === 'รอรังวัด');
+
+            // รวมรายการ Temp เข้ากับรายการที่บันทึกแล้ว (กันซ้ำ)
+            let newQueue = [...tempOnly];
+            savedItems.forEach(s => {
+                if (!newQueue.find(q => q.id === s.id)) {
+                    newQueue.push({ ...s, timeSlot: s.survey_time || '-' });
+                }
+            });
+
+            selectedQueue = newQueue;
+
+            filterList();
+            renderScheduleTable();
+            renderMapMarkers();
+            renderVisualCalendar();
+        }
+
+        function updateQuickAddDatalist() {
+            const dl = document.getElementById('unassigned_list');
+            if (!dl) return;
+
+            // หาเฉพาะรายการที่ยังไม่นัดและยังไม่ได้อยู่ในกระดาน
+            let unassigned = queueData.filter(item => {
+                const noDate = !item.survey_date || item.survey_date === '-' || item.survey_date === '';
+                const notSelected = !selectedQueue.find(q => q.id === item.id);
+                return noDate && notSelected;
+            });
+
+            dl.innerHTML = '';
+            unassigned.forEach(item => {
+                dl.innerHTML += `<option value="${item.id}">${item.req_name || item.name || ''} - ${item.plot_no || item.plot_id || ''}</option>`;
+            });
+        }
+
+        function quickAddToday() {
+            const input = document.getElementById('quick_add_input');
+            const val = input.value.trim();
+            if (!val) return;
+
+            // ค้นหาจาก ID หรือชื่อ
+            let target = queueData.find(item => item.id === val || (item.req_name || item.name || '').includes(val));
+
+            if (!target) {
+                return Swal.fire('ไม่พบรายการ', 'ไม่พบรหัสคิวหรือชื่อที่ระบุในรายการรอรังวัด', 'warning');
             }
+
+            // ถ้าอยู่ใน selectedQueue อยู่แล้ว
+            if (selectedQueue.find(q => q.id === target.id)) {
+                return Swal.fire('แจ้งเตือน', 'รายการนี้มีอยู่ในกระดานแผนงานแล้ว', 'info');
+            }
+
+            // เพิ่มเข้ากระดาน (โดยยังไม่ระบุเวลา ให้ระบบคำนวณให้)
+            selectedQueue.push({
+                ...target,
+                is_temp: true
+            });
+
+            input.value = '';
+
+            // เรียกคำนวณเวลาใหม่โดยรักษาลำดับเดิมไว้ (ให้ตัวใหม่ไปต่อตัวสุดท้าย)
+            calculateSchedule(true);
+
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'ดึงงานด่วนเข้าคิวถัดไปเรียบร้อย',
+                showConfirmButton: false,
+                timer: 1500
+            });
+
+            updateQuickAddDatalist();
+        }
+
+        function addManualTask() {
+            const nameEl = document.getElementById('manual_name');
+            const phoneEl = document.getElementById('manual_phone');
+            const name = nameEl.value.trim();
+            const phone = phoneEl.value.trim();
+
+            if (!name) return Swal.fire('เตือน', 'กรุณาระบุชื่อผู้ขอ', 'warning');
+
+            // สร้าง ID ใหม่แบบด่วน (Prefix ด้วย URG-)
+            const newId = 'URG-' + Math.random().toString(36).substr(2, 5).toUpperCase();
+
+            const newTask = {
+                id: newId,
+                req_name: name,
+                req_phone: phone,
+                status: 'รอรังวัด',
+                is_temp: true,
+                is_manual: true
+            };
+
+            // เพิ่มเข้าทั้งฐานข้อมูลจำลอง และ รายการที่เลือก
+            queueData.push(newTask);
+            selectedQueue.push(newTask);
+
+            // ส่งบันทึกลง Sheet ทันที
+            const payload = {
+                action: 'save_reception',
+                id: newTask.id,
+                req_id: newTask.id,
+                req_name: newTask.req_name,
+                req_phone: newTask.req_phone,
+                status: newTask.status,
+                remark: '[งานแทรกด่วน]'
+            };
+
+            fetch(GAS_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify(payload)
+            });
+
+            // ล้างค่าในช่องกรอก
+            nameEl.value = '';
+            phoneEl.value = '';
+
+            // เรียกคำนวณเวลาใหม่ (ให้ตัวใหม่ไปต่อที่ว่างถัดไป)
+            calculateSchedule(true);
+
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'สร้างงานแทรกด่วนในคิวถัดไปเรียบร้อย',
+                showConfirmButton: false,
+                timer: 2000
+            });
         }
 
         function logCall(caseId) {
@@ -697,13 +1563,199 @@
             fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
         }
 
+        async function rescheduleItem(caseId) {
+            let item = selectedQueue.find(q => q.id === caseId) || queueData.find(q => q.id === caseId);
+            if (!item) return;
+
+            const { value: formValues } = await Swal.fire({
+                title: 'เลื่อนนัดรังวัด (Smarter)',
+                html:
+                    `<div class="text-start mb-2 small fw-bold text-primary">สาเหตุการเลื่อน (หมายเหตุ)</div>` +
+                    `<input id="swal-remark" class="swal2-input mt-0 mb-3" placeholder="ระบุเหตุผล เช่น ติดต่อผู้เช่าไม่ได้..." value="${item.remark || ''}">` +
+                    `<div class="text-start mb-2 small fw-bold">ระบุวันที่และเวลาใหม่</div>` +
+                    `<input id="swal-date" class="swal2-input mt-0" type="date" value="${document.getElementById('survey_date').value}">` +
+                    `<div class="d-flex gap-2 mt-2">` +
+                    `  <input id="swal-time-s" class="swal2-input m-0" type="time" placeholder="เริ่ม" style="width:50%">` +
+                    `  <input id="swal-time-e" class="swal2-input m-0" type="time" placeholder="สิ้นสุด" style="width:50%">` +
+                    `</div>`,
+                focusConfirm: false,
+                showDenyButton: true,
+                denyButtonText: 'เช็คคิวว่างถัดไปให้อัตโนมัติ',
+                preConfirm: () => {
+                    return [
+                        document.getElementById('swal-date').value,
+                        document.getElementById('swal-time-s').value,
+                        document.getElementById('swal-time-e').value,
+                        document.getElementById('swal-remark').value
+                    ]
+                }
+            });
+
+            if (formValues) {
+                checkConflictAndSave(caseId, formValues[0], formValues[1], formValues[2], formValues[3]);
+            } else if (Swal.getDenyButton() && document.activeElement === document.querySelector('.swal2-deny')) {
+                suggestAvailableSlot(caseId);
+            }
+        }
+
+        function suggestAvailableSlot(caseId) {
+            let mStart = document.getElementById('mission_start').value;
+            let mEnd = document.getElementById('mission_end').value;
+            let selectedDate = document.getElementById('swal-date').value;
+
+            // ใช้ช่วงวันทางราชการเป็นหลัก ถ้าไม่มีให้ใช้วันพรุ่งนี้
+            let startDateStr = mStart || selectedDate || new Date(Date.now() + 86400000).toISOString().split('T')[0];
+            let endDateStr = mEnd || new Date(Date.now() + (86400000 * 30)).toISOString().split('T')[0]; // Max 30 days default
+
+            let avgMins = parseInt(document.getElementById('avg_time').value) || 60;
+            let startWork = 540; // 09:00
+            let endWork = 960; // 16:00
+
+            let foundDate = null;
+            let foundStartStr = null;
+
+            let tempDate = new Date(startDateStr);
+            let stopDate = new Date(endDateStr);
+
+            for (let i = 0; i < 45; i++) {
+                if (tempDate > stopDate) break;
+
+                let checkDate = tempDate.toISOString().split('T')[0];
+                let dayRows = queueData.filter(q => q.survey_date === checkDate && q.status === 'รอรังวัด');
+
+                let currentPointer = startWork;
+                dayRows.sort((a, b) => timeStrToMins((a.survey_time || '').split(' - ')[0]) - timeStrToMins((b.survey_time || '').split(' - ')[0]));
+
+                for (let row of dayRows) {
+                    let rowStart = timeStrToMins((row.survey_time || '').split(' - ')[0]);
+                    if (rowStart - currentPointer >= avgMins) {
+                        foundDate = checkDate;
+                        foundStartStr = minsToTimeStr(currentPointer);
+                        break;
+                    }
+                    currentPointer = timeStrToMins((row.survey_time || '').split(' - ')[1] || '00:00');
+                    if (currentPointer < 720 && currentPointer + avgMins > 720) currentPointer += 60; // พักเที่ยง
+                }
+
+                if (!foundDate && (endWork - currentPointer >= avgMins)) {
+                    foundDate = checkDate;
+                    foundStartStr = minsToTimeStr(currentPointer);
+                }
+
+                if (foundDate) break;
+                tempDate.setDate(tempDate.getDate() + 1);
+            }
+
+            if (foundDate) {
+                document.getElementById('swal-date').value = foundDate;
+                document.getElementById('swal-time-s').value = foundStartStr;
+                let [h, m] = foundStartStr.split(':').map(Number);
+                document.getElementById('swal-time-e').value = minsToTimeStr((h * 60) + m + avgMins);
+
+                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: `เจอคิวว่างราชการ: ${foundDate} ${foundStartStr}`, showConfirmButton: false, timer: 3000 });
+            } else {
+                Swal.fire('ไม่พบที่ว่าง', 'ในช่วงวันที่กำหนดไม่มีคิวว่างพอสำหรับงานนี้ กรุณาขยายช่วงวันราชการ', 'warning');
+            }
+        }
+
+
+        function checkConflictAndSave(caseId, date, start, end, remark) {
+            let timeStr = `${start} - ${end}`;
+            // เช็คใน Memory เบื้องต้น
+            let isConflict = queueData.some(q => q.survey_date === date && q.survey_time === timeStr && q.id !== caseId && q.status === 'รอรังวัด');
+
+            if (isConflict) {
+                Swal.fire({
+                    title: 'คิวนี้มีนัดแล้ว!',
+                    text: `วันที่ ${date} เวลา ${timeStr} มีนัดอื่นอยู่แล้ว ต้องการยืนยันบันทึกซ้อนหรือไม่?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'ยืนยันบันทึก (ซ้อนคิว)',
+                    cancelButtonText: 'กลับไปแก้ไข'
+                }).then(res => {
+                    if (res.isConfirmed) executeReschedule(caseId, date, timeStr, remark);
+                });
+            } else {
+                executeReschedule(caseId, date, timeStr, remark);
+            }
+        }
+
+        function executeReschedule(caseId, date, timeStr, remark = '') {
+            let payload = {
+                action: 'update_survey_item',
+                update_type: 'reschedule',
+                case_id: caseId,
+                new_date: date,
+                new_time: timeStr,
+                remark: remark
+            };
+
+            // อัปเดตข้อมูลในหน่วยความจำ (Local Memory) ทันทีเพื่อให้ UI ตอบสนองทันใจ
+            let localItem = queueData.find(q => q.id === caseId);
+            if (localItem) {
+                localItem.survey_date = date;
+                localItem.survey_time = timeStr;
+                if (date === '-' || date === '') {
+                    localItem.status = 'พร้อมรังวัด';
+                }
+            }
+
+            // ถ้าเป็นการยกเลิก/ล้างนัด (date = '-') ให้เอาออกจากกระดานขวา เพื่อให้กลับไปแสดงทางซ้าย
+            if (date === '-' || date === '') {
+                selectedQueue = selectedQueue.filter(item => item.id !== caseId);
+            }
+
+            Swal.fire({ title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading() });
+            fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
+                .then(() => {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'สำเร็จ',
+                        text: (date === '-' ? 'ล้างนัดหมายและส่งกลับรายการค้างนัดเรียบร้อย' : 'อัปเดตข้อมูลนัดหมายเรียบร้อย'),
+                        timer: 1000,
+                        showConfirmButton: false
+                    });
+                    // ไม่ต้องรอ loadQueueFromSheet ก็ได้เพราะอัปเดต Local ไว้แล้ว แต่โหลดเผื่อความชัวร์
+                    loadQueueFromSheet();
+                });
+        }
+
+        function handleStatusChange(caseId, newStatus) {
+            if (newStatus === 'เลื่อนนัด') {
+                rescheduleItem(caseId);
+            } else if (newStatus === 'ยกเลิกนัด') {
+                unscheduleItem(caseId);
+            } else {
+                let payload = { action: 'update_survey_item', update_type: 'status', case_id: caseId, new_status: newStatus };
+                fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
+                    .then(() => loadQueueFromSheet());
+            }
+        }
+
+        function unscheduleItem(caseId) {
+            Swal.fire({
+                title: 'ยืนยันยกเลิกนัด?',
+                text: "ระบบจะล้างวันที่และเวลาเดิมออก และส่งรายการกลับไปที่คิวรอจัดนัดหมาย",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'ยืนยัน',
+                cancelButtonText: 'ยกเลิก'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    executeReschedule(caseId, '-', '-');
+                } else {
+                    renderScheduleTable(); // Reset dropdown
+                }
+            });
+        }
+
         function updateRowStatus(caseId, newStatus) {
             let target = selectedQueue.find(q => q.id === caseId);
             if (target) target.status = newStatus;
 
             let payload = { action: 'update_survey_item', update_type: 'status', case_id: caseId, new_status: newStatus };
             fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) });
-            // แจ้ง toast สะกิดเล็กๆ ว่าอัปเดตสถานะแล้ว
+
             Swal.fire({
                 toast: true,
                 position: 'top-end',
@@ -712,14 +1764,73 @@
                 icon: 'success',
                 title: 'อัปเดตสถานะเป็น ' + newStatus
             });
+            renderScheduleTable();
         }
 
+        // Function pullUnassigned duplicate was here, now removed.
+
         // ==========================================
-        // 5. Mapping Logistics
+        // 5. Mapping Logistics & Reordering
         // ==========================================
+        function moveItem(indexInGroup, direction, dateKey) {
+            // ดึงรายการทั้งหมดของวันที่นั้นมา
+            let itemsInDate = selectedQueue.filter(q => (q.survey_date || 'ยังไม่ระบุวันที่') === dateKey);
+            let otherItems = selectedQueue.filter(q => (q.survey_date || 'ยังไม่ระบุวันที่') !== dateKey);
+
+            // สลับตำแหน่งงานในกลุ่มวันที่เดียวกัน
+            let targetIdx = indexInGroup + direction;
+            if (targetIdx < 0 || targetIdx >= itemsInDate.length) return;
+
+            let temp = itemsInDate[indexInGroup];
+            itemsInDate[indexInGroup] = itemsInDate[targetIdx];
+            itemsInDate[targetIdx] = temp;
+
+            // รวมกลับเข้า selectedQueue โดยรักษาลำดับกลุ่มวันที่เดิม
+            // (เราใช้วิธีกรอใหม่ตาม Sorted Dates เดิม เพื่อความง่าย)
+            // แต่ที่ง่ายกว่าคือแค่แทนที่ใน selectedQueue ตัวหลัก
+
+            // หา Index จริงใน selectedQueue ของกลุ่มนี้
+            let startIdx = selectedQueue.findIndex(q => (q.survey_date || 'ยังไม่ระบุวันที่') === dateKey);
+            selectedQueue.splice(startIdx, itemsInDate.length, ...itemsInDate);
+
+            // คำนวณเวลาใหม่ (ข้ามขั้นตอนจัดโซน)
+            calculateSchedule(true);
+        }
+
+        function markAsCalled(id) {
+            let nowStr = new Date().toLocaleString('th-TH');
+            let target = selectedQueue.find(q => q.id === id);
+
+            if (target) {
+                target.last_called = nowStr;
+                renderScheduleTable();
+
+                // บันทึกลง Sheet
+                let payload = {
+                    action: 'update_survey_item',
+                    update_type: 'call_log',
+                    case_id: id,
+                    call_time: nowStr
+                };
+                fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: JSON.stringify(payload) })
+                    .then(() => {
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: 'บันทึกการโทรเรียบร้อย',
+                            showConfirmButton: false,
+                            timer: 1000
+                        });
+                    });
+            }
+        }
         function initMap() {
             const street = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
                 maxZoom: 22, attribution: 'Google Maps'
+            });
+            const hybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+                maxZoom: 22, attribution: 'Google Satellite'
             });
 
             map = L.map('map', {
@@ -727,54 +1838,335 @@
                 zoom: 12,
                 layers: [street]
             });
+
+            const baseMaps = { "แผนที่ถนน": street, "ดาวเทียม": hybrid };
+            const overlayMaps = {};
+            layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
+
+            // ให้แสดงทีละ 1 เลเยอร์ (เมื่อผู้ใช้ติ๊กเลือกเลเยอร์ใหม่ ให้ซ่อนเลเยอร์เก่า)
+            map.on('overlayadd', function (e) {
+                allLayers.forEach(l => {
+                    if (l !== e.layer && map.hasLayer(l)) {
+                        map.removeLayer(l); // เอาเลเยอร์อื่นออก
+                    }
+                });
+                // ปรับ Checkbox ใน Control ให้กลายเป็นแบบเลือกได้อันเดียว
+                setTimeout(() => {
+                    document.querySelectorAll('.leaflet-control-layers-overlays input[type="checkbox"]').forEach(cb => {
+                        if (!cb.nextElementSibling.innerHTML.includes(e.name)) {
+                            cb.checked = false;
+                        }
+                    });
+                }, 10);
+            });
+
+            // ดักจับการคลิกบนแผนที่ (สำหรับแก้ไขพิกัดในหน้าวางแผน)
+            map.on('click', e => {
+                if (pinningTargetId) {
+                    updateCaseCoords(pinningTargetId, e.latlng);
+                }
+            });
+
+            loadGeoJSONLayers();
+            startLocationTracking();
+        }
+
+        let userLocationMarker = null;
+        function startLocationTracking() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.watchPosition(
+                    (pos) => {
+                        const { latitude, longitude, accuracy } = pos.coords;
+                        const userLatLng = [latitude, longitude];
+
+                        if (!userLocationMarker) {
+                            const pulseIcon = L.divIcon({
+                                className: 'user-location-marker',
+                                html: '<div class="location-pulse"></div>',
+                                iconSize: [12, 12],
+                                iconAnchor: [6, 6]
+                            });
+                            userLocationMarker = L.marker(userLatLng, { icon: pulseIcon }).addTo(map);
+                            userLocationMarker.bindPopup("ตำแหน่งของคุณ");
+                        } else {
+                            userLocationMarker.setLatLng(userLatLng);
+                        }
+                    },
+                    (err) => console.warn("Geolocation error:", err),
+                    { enableHighAccuracy: true }
+                );
+            }
+        }
+
+        function locateUser() {
+            if (userLocationMarker) {
+                map.setView(userLocationMarker.getLatLng(), 17);
+                userLocationMarker.openPopup();
+                if (window.innerWidth <= 768) switchMobileTab('map');
+            } else {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'กำลังค้นหาพิกัดของคุณ...', showConfirmButton: false, timer: 2000 });
+            }
+        }
+
+        function enablePinning(id) {
+            if (pinningTargetId === id) {
+                // ยกเลิก
+                pinningTargetId = null;
+                document.getElementById('map').style.cursor = '';
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 1500,
+                    icon: 'warning',
+                    title: 'ยกเลิกโหมดเลือกพิกัด'
+                });
+                renderScheduleTable(); // อัปเดตสีปุ่ม
+                return;
+            }
+
+            pinningTargetId = id;
+            document.getElementById('map').style.cursor = 'crosshair';
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 3000,
+                icon: 'info',
+                title: 'โหมดเลือกพิกัด: คลิกบนแผนที่เพื่อระบุตำแหน่ง'
+            });
+            renderScheduleTable(); // อัปเดตสีปุ่ม
+        }
+
+        function updateCaseCoords(id, latlng) {
+            let lat = latlng.lat.toFixed(6);
+            let lng = latlng.lng.toFixed(6);
+            let combined = `${lat},${lng}`;
+
+            // อัปเดตในตัวแปรหน้าเว็บทันที
+            let target = selectedQueue.find(q => q.id === id);
+            if (target) {
+                target.coords = combined;
+            }
+
+            // อัปเดตใน queueData หลักด้วย
+            let mainTarget = queueData.find(q => q.id === id);
+            if (mainTarget) {
+                mainTarget.coords = combined;
+            }
+
+            // ส่งบันทึกลง Sheet (อ้างอิงฟังก์ชันใน code.gs ที่เพิ่มรองรับ 'coords')
+            let payload = {
+                action: 'update_survey_item',
+                update_type: 'coords',
+                case_id: id,
+                new_coords: combined
+            };
+
+            fetch(GAS_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                body: JSON.stringify(payload)
+            }).then(() => {
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 1500,
+                    icon: 'success',
+                    title: 'บันทึกพิกัดใหม่เรียบร้อย'
+                });
+                pinningTargetId = null;
+                document.getElementById('map').style.cursor = '';
+                renderScheduleTable();
+                renderMapMarkers();
+            });
+        }
+
+        // สุ่มสีเส้นขอบแผนที่
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) { color += letters[Math.floor(Math.random() * 16)]; }
+            return color;
+        }
+
+        function loadGeoJSONLayers() {
+            console.log("กำลังขอรายชื่อไฟล์แผนที่จาก Drive...");
+            fetch(GAS_URL + '?action=get_map_list&t=' + new Date().getTime())
+                .then(r => r.json())
+                .then(res => {
+                    if (res.status !== 'success' || !Array.isArray(res.list)) return;
+
+                    res.list.forEach(fileInfo => {
+                        fetch(GAS_URL + '?action=get_map_data&id=' + fileInfo.id + '&t=' + new Date().getTime())
+                            .then(r => r.json())
+                            .then(fileRes => {
+                                if (fileRes.status !== 'success') return;
+                                try {
+                                    let jsonData = JSON.parse(fileRes.data_string);
+                                    let color = getRandomColor();
+                                    let layer = L.geoJSON(jsonData, {
+                                        style: { color: color, weight: 2, opacity: 1, fillColor: color, fillOpacity: 0.2 },
+                                        onEachFeature: (feature, l) => {
+                                            let p = feature.properties;
+                                            let name = p["Land numbe"] || p["Land number"] || p.plot_no || p.Name || '-';
+                                            let area_str = `${p.rai || 0} ไร่ ${p.ngan || 0} งาน ${p.sqwa || 0} วา`;
+                                            l.bindPopup(`<b>ไฟล์: ${fileInfo.filename}</b><br>แปลงที่: ${name}<br>เนื้อที่: ${area_str}`);
+                                        }
+                                    });
+                                    allLayers.push(layer);
+                                    let displayName = fileInfo.filename.replace('.json', '').replace('.geojson', '');
+                                    layerControl.addOverlay(layer, `<span style="color:${color}; font-weight:bold;">■</span> ${displayName}`);
+                                } catch (e) { console.error(e); }
+                            });
+                    });
+                });
+        }
+
+        let mapMarkerDict = {}; // สำหรับค้นหา Marker จาก ID
+        let lastHighlightedMarker = null;
+
+        function focusOnPin(id) {
+            // คืนค่าหมุดตัวเก่า (ถ้ามี)
+            if (lastHighlightedMarker) {
+                let oldIcon = lastHighlightedMarker.options.icon;
+                let resetHTML = oldIcon.options.html.replace('background-color:#ff0000', 'background-color:#0d6efd').replace('box-shadow: 0 0 15px red;', '');
+                lastHighlightedMarker.setIcon(L.divIcon({ ...oldIcon.options, html: resetHTML }));
+            }
+
+            let marker = mapMarkerDict[id];
+            if (marker) {
+                // เปลี่ยนเป็น Tab แผนที่ถ้าเป็นมือถือ
+                if (window.innerWidth <= 768) switchMobileTab('map');
+
+                map.setView(marker.getLatLng(), 18);
+                marker.openPopup();
+
+                // เอฟเฟกต์กระพริบเบาๆ บนหมุดใหม่
+                let originalIcon = marker.options.icon;
+                let highlightHTML = originalIcon.options.html.replace('background-color:#0d6efd', 'background-color:#ff0000; box-shadow: 0 0 15px red;');
+                marker.setIcon(L.divIcon({ ...originalIcon.options, html: highlightHTML }));
+
+                lastHighlightedMarker = marker;
+            } else {
+                Swal.fire({ toast: true, position: 'top-end', icon: 'info', title: 'ไม่พิกัดหมุดในรายการนี้', showConfirmButton: false, timer: 1500 });
+            }
         }
 
         function renderMapMarkers() {
             // ลบของเก่าออกให้หมดก่อน
-            mapMarkers.forEach(m => map.removeLayer(m));
+            Object.values(mapMarkerDict).forEach(m => map.removeLayer(m));
+            mapMarkerDict = {};
             mapMarkers = [];
 
             let bounds = [];
 
+            // 1. วาดรายการที่เลือกแล้ว (Blue Circle with Number)
             selectedQueue.forEach((item, index) => {
-                if (item.coords && item.coords.includes(',')) {
+                if (item.coords && item.coords.includes(',') && !item.coords.includes('-,-') && item.coords !== '0,0') {
                     let [lat, lng] = item.coords.split(',').map(Number);
-
                     if (!isNaN(lat) && !isNaN(lng)) {
-                        // เพิ่ม Number Icon ให้พนักงานรู้ว่าต้องไปไหนก่อนหลัง
                         let numberIcon = L.divIcon({
                             className: 'custom-div-icon',
-                            html: `<div style='background-color:#0d6efd; color:white; width:24px; height:24px; border-radius:50%; text-align:center; line-height:24px; font-weight:bold; border:2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);'>${index + 1}</div>`,
-                            iconSize: [24, 24],
-                            iconAnchor: [12, 12]
+                            html: `<div style='background-color:#0d6efd; color:white; width:26px; height:26px; border-radius:50%; text-align:center; line-height:26px; font-weight:bold; border:2px solid white; box-shadow: 0 0 8px rgba(0,0,0,0.4);'>${index + 1}</div>`,
+                            iconSize: [26, 26],
+                            iconAnchor: [13, 13]
                         });
 
                         let marker = L.marker([lat, lng], { icon: numberIcon }).addTo(map);
-
                         let reqName = item.req_name || item.name || '-';
-                        marker.bindPopup(`<b>คิวที่ ${index + 1}: ${item.timeSlot}</b><br>${reqName}<br>${item.id}`);
+                        marker.bindPopup(`<b>วันนัด: ${item.survey_date || '-'}</b><br><b>เวลา: ${item.timeSlot}</b><br>${reqName}<br><span class="text-danger small">คลิกหมุดอีกครั้งเพื่อนำออก</span>`);
 
-                        // เมื่อเอาเม้าส์ไปชี้หมุด ให้แสดงพิกัดที่กรอบด้านล่าง
-                        marker.on('mouseover', function (e) {
-                            document.getElementById('active_target_detail').innerHTML =
-                                `<span class="text-primary fw-bold">Lat:</span> ${lat.toFixed(5)} <span class="text-primary fw-bold ms-2">Lng:</span> ${lng.toFixed(5)} <br>
-                                 <small class="text-muted"><i class="fa-solid fa-car"></i> เป้าหมายที่ ${index + 1}: ${reqName}</small>`;
+                        // ติกซ้ำเพื่อเอาออก
+                        marker.on('click', (e) => {
+                            L.DomEvent.stopPropagation(e);
+                            toggleSelection(item.id);
                         });
 
+                        mapMarkerDict[item.id] = marker;
                         mapMarkers.push(marker);
                         bounds.push([lat, lng]);
                     }
                 }
             });
 
-            // ซูมแผนที่ให้ครอบคลุมจุดทั้งหมดอัตโนมัติ (ถ้ามีอย่างน้อย 1 จุด)
+            // 2. วาดรายการที่ "พร้อมรังวัด" แต่ยังไม่ถูกเลือก (Orange Pin)
+            queueData.forEach(item => {
+                if (selectedQueue.find(q => q.id === item.id)) return;
+
+                const status = (item.status || '').trim();
+                const isReady = status === '' || status === '-' || status === 'ยื่นคำร้องแล้ว' || status === 'รับเรื่องแล้ว' || status === 'สอบสวนสิทธิแล้ว' || status === 'พร้อมรังวัด' || status === 'เลื่อนนัด';
+                const hasDate = (item.survey_date && item.survey_date !== '-' && item.survey_date !== '');
+
+                // ตรวจสอบพิกัดจริง
+                if (isReady && !hasDate && item.coords && item.coords.includes(',') && !item.coords.includes('-,-') && item.coords !== '0,0') {
+                    let [lat, lng] = item.coords.split(',').map(Number);
+                    if (!isNaN(lat) && !isNaN(lng)) {
+                        let orangeIcon = L.divIcon({
+                            className: 'custom-div-icon',
+                            html: `<div style='color:#fd7e14; font-size:24px; text-shadow: 0 0 3px white;'><i class="fa-solid fa-location-dot"></i></div>`,
+                            iconSize: [24, 24],
+                            iconAnchor: [12, 24]
+                        });
+
+                        let marker = L.marker([lat, lng], { icon: orangeIcon }).addTo(map);
+                        let reqName = item.req_name || item.name || '-';
+                        marker.bindPopup(`<b>รอจัดนัด: ${reqName}</b><br>${item.id}<br><span class="text-primary small">คลิกหมุดเพื่อหยิบเข้าคิว</span>`);
+
+                        // ติกครั้งแรกเพื่อหยิบเข้า
+                        marker.on('click', (e) => {
+                            L.DomEvent.stopPropagation(e);
+                            toggleSelection(item.id);
+                        });
+
+                        mapMarkerDict[item.id] = marker;
+                        mapMarkers.push(marker);
+                    }
+                }
+            });
+
             if (bounds.length > 0) {
-                map.fitBounds(bounds, { padding: [30, 30] });
-            } else {
-                document.getElementById('active_target_detail').innerHTML = '<span class="text-muted">ไม่พบข้อมูลพิกัดในรายการที่เลือก</span>';
+                map.fitBounds(bounds, { padding: [50, 50] });
             }
         }
 
+
+        async function clearAllSchedulesDB() {
+            if (selectedQueue.length === 0) return Swal.fire('เตือน', 'กรุณาเลือกรายการใน Sidebar ก่อนล้างนัดหมาย', 'warning');
+
+            const result = await Swal.fire({
+                title: 'ยืนยันล้างนัดทั้งหมด?',
+                text: `คุณกำลังจะล้างวันที่และเวลาของ ${selectedQueue.length} รายการที่เลือก กลับเป็นสถานะรอจัดนัด`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'ล้างนัดทั้งหมด',
+                cancelButtonText: 'ยกเลิก'
+            });
+
+            if (result.isConfirmed) {
+                Swal.fire({ title: 'กำลังล้างนัด...', didOpen: () => Swal.showLoading() });
+                let promises = selectedQueue.map(q =>
+                    fetch(GAS_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        body: JSON.stringify({
+                            action: 'update_survey_item',
+                            update_type: 'reschedule',
+                            case_id: q.id,
+                            new_date: '-', // ลบวันที่
+                            new_time: '-', // ลบเวลา
+                            new_status: 'พร้อมรังวัด' // บังคับรีเซ็ตสถานะ
+                        })
+                    })
+                );
+                await Promise.all(promises);
+                Swal.fire('สำเร็จ', 'ล้างนัดหมายทุกรายการเรียบร้อย', 'success');
+                selectedQueue = [];
+                loadQueueFromSheet();
+            }
+        }
 
         // ==========================================
         // 5. Layout Resizers & Mobile Tabs
@@ -850,7 +2242,7 @@
         function exportSchedule() {
             if (selectedQueue.length === 0) return Swal.fire('เตือน', 'ยังไม่มีคิวในตะกร้า', 'warning');
 
-            let schedDate = document.getElementById('sched_date').value;
+            let schedDate = document.getElementById('survey_date').value;
             let payload = {
                 survey_date: schedDate,
                 queue: selectedQueue
@@ -874,7 +2266,399 @@
                 .catch(err => Swal.fire('Error', 'ไม่สามารถเชื่อมต่อ Local API สำหรับพิมพ์ PDF ได้: ' + err, 'error'));
         }
 
+        function renderDailyQueueTab() {
+            let container = document.getElementById('daily_group_container');
+            if (!container) return;
+
+            if (queueData.length === 0) {
+                container.innerHTML = '<div class="text-center p-5 text-muted"><i class="fa-solid fa-cloud-arrow-down fa-fade mb-3 d-block" style="font-size:2rem"></i> กำลังดึงข้อมูลล่าสุด...</div>';
+                loadQueueFromSheet().then(() => renderDailyQueueTab());
+                return;
+            }
+
+            container.innerHTML = '<div class="text-center p-3 text-muted"><i class="fa-solid fa-spinner fa-spin"></i> กำลังวิเคราะห์คิวงาน...</div>';
+
+            // Grouping queueData by survey_date
+            let groups = {};
+            queueData.forEach(q => {
+                let d = q.survey_date && q.survey_date !== '-' ? q.survey_date : 'ยังไม่ระบุนัด';
+                if (!groups[d]) groups[d] = [];
+                groups[d].push(q);
+            });
+
+            let sortedDates = Object.keys(groups).sort((a, b) => {
+                if (a === 'ยังไม่ระบุนัด') return 1;
+                if (b === 'ยังไม่ระบุนัด') return -1;
+                return a.localeCompare(b); // Sort YYYY-MM-DD
+            });
+
+            if (sortedDates.length === 0 || (sortedDates.length === 1 && sortedDates[0] === 'ยังไม่ระบุนัด' && groups['ยังไม่ระบุนัด'].length === 0)) {
+                container.innerHTML = '<div class="text-center p-5 text-muted"><i class="fa-solid fa-folder-open mb-2 d-inline-block" style="font-size:3rem"></i><br>ไม่พบข้อมูลคิวงานที่จัดนัดแล้ว</div>';
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="card shadow-sm border-0 mb-3 bg-primary text-white">
+                    <div class="card-body p-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="mb-0 fw-bold"><i class="fa-solid fa-calendar-alt me-2"></i>ภาพรวมงานนัดหมาย</h6>
+                                <small class="opacity-75" id="cal_summary">ตรวจสอบวันว่างและภาระงาน</small>
+                            </div>
+                            <button class="btn btn-light btn-sm fw-bold border-0 shadow-sm" onclick="showCalendarDashboard()">
+                                <i class="fa-solid fa-expand"></i> ดูปฏิทิน
+                            </button>
+                        </div>
+                    </div>
+                </div>`;
+            sortedDates.forEach(date => {
+                if (date === 'ยังไม่ระบุนัด') return; // ปกติเราเน้นโชว์รายการนัดแล้วในหน้านี้
+
+                let items = groups[date];
+                // Sort items by time inside group
+                items.sort((a, b) => {
+                    let tA = (a.survey_time || '00:00').split(' - ')[0];
+                    let tB = (b.survey_time || '00:00').split(' - ')[0];
+                    return (tA || '00:00').localeCompare(tB || '00:00');
+                });
+
+                let dateTitle = date;
+                try {
+                    let dObj = new Date(date);
+                    if (!isNaN(dObj.getTime())) {
+                        dateTitle = dObj.toLocaleDateString('th-TH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                    }
+                } catch (e) { }
+
+                let html = `
+                <div class="day-group-card shadow-sm border-0 mb-3">
+                    <div class="day-group-header bg-white" onclick="this.nextElementSibling.classList.toggle('d-none')">
+                        <span class="text-primary fw-bold"><i class="fa-solid fa-calendar-check me-2"></i> ${dateTitle}</span>
+                        <span class="badge bg-light text-dark border rounded-pill">${items.length} ราย</span>
+                    </div>
+                    <div class="day-group-body p-0">
+                        <table class="table table-sm table-hover align-middle mb-0">
+                            <thead class="bg-light small text-muted">
+                                <tr>
+                                    <th class="ps-3" style="width:100px">เวลา</th>
+                                    <th>รายละเอียด / แปลง</th>
+                                    <th class="text-center" style="width:80px">Map</th>
+                                    <th class="text-center" style="width:120px">สถานะ</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+                items.forEach(item => {
+                    let navBtn = (item.coords && item.coords.includes(',')) ?
+                        `<a href="https://maps.google.com/?q=${item.coords}" target="_blank" class="btn btn-sm btn-outline-primary shadow-sm"><i class="fa-solid fa-location-arrow"></i></a>` : '-';
+
+                    let statusClass = 'badge bg-light text-muted border';
+                    if (item.status === 'รังวัดแล้ว') statusClass = 'badge bg-success';
+                    if (item.status === 'เลื่อนนัด') statusClass = 'badge bg-danger';
+                    if (item.status === 'ยกเลิกนัด') statusClass = 'badge bg-warning text-dark';
+
+                    let remarkHTML = item.remark ? `<div class="mt-1 bg-light p-1 rounded" style="font-size:0.65rem; color:#d9534f;"><i class="fa-solid fa-info-circle"></i> ${item.remark}</div>` : '';
+
+                    html += `
+                                <tr class="small">
+                                    <td class="ps-3 fw-bold text-primary">${(item.survey_time || '??:??').split(' - ')[0]}</td>
+                                    <td>
+                                        <div class="fw-bold text-dark">${item.req_name || item.name}</div>
+                                        <div class="text-muted" style="font-size:0.7rem">${item.plot_no || item.plot_id || 'ไม่ทราบเลขแปลง'}</div>
+                                        ${remarkHTML}
+                                    </td>
+                                    <td class="text-center">${navBtn}</td>
+                                    <td class="text-center"><span class="${statusClass}">${item.status || 'รอรังวัด'}</span></td>
+                                </tr>`;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
+                container.innerHTML += html;
+            });
+
+            // Auto-collapse second group onwards for better UX
+            let bodies = container.querySelectorAll('.day-group-body');
+            bodies.forEach((body, idx) => {
+                if (idx > 0) body.classList.add('d-none');
+            });
+        }
+
+        async function autoBatchSchedule() {
+            // Already integrated into calculateSchedule() logic but keeping as a wrapper if needed or removing.
+            // For now, let's just make sure we don't break anything.
+            calculateSchedule();
+        }
+
+        // ==========================================
+        // 5. Calendar Dashboard & Smart Logic
+        // ==========================================
+        function showCalendarDashboard() {
+            renderVisualCalendar();
+            const modal = new bootstrap.Modal(document.getElementById('calendarModal'));
+            modal.show();
+        }
+
+        function renderVisualCalendar() {
+            let container = document.getElementById('calendar_grid') || document.getElementById('calendarGrid');
+            if (!container) return;
+            container.innerHTML = '';
+
+            let now = currentCalendarDate || new Date();
+            let month = now.getMonth();
+            let year = now.getFullYear();
+
+            let firstDay = new Date(year, month, 1).getDay();
+            let daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            let monthTitleEl = document.getElementById('cal_month_title') || document.getElementById('currentMonthYear');
+            if (monthTitleEl) monthTitleEl.innerText = now.toLocaleDateString('th-TH', { month: 'long', year: 'numeric' });
+
+            for (let i = 0; i < firstDay; i++) container.innerHTML += '<div class="cal-day cal-empty"></div>';
+
+            let groups = {};
+            queueData.forEach(q => {
+                if (q.survey_date && q.survey_date !== '-') {
+                    if (!groups[q.survey_date]) groups[q.survey_date] = [];
+                    groups[q.survey_date].push(q);
+                }
+            });
+
+            for (let d = 1; d <= daysInMonth; d++) {
+                let dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                let tasks = groups[dateStr] || [];
+                let isMission = false;
+
+                let mStart = document.getElementById('mission_start').value;
+                let mEnd = document.getElementById('mission_end').value;
+                if (mStart && mEnd) {
+                    if (dateStr >= mStart && dateStr <= mEnd) isMission = true;
+                }
+
+                let badgeHTML = tasks.length > 0 ? `<div class="cal-badge bg-primary">${tasks.length}</div>` : '';
+                let missionClass = isMission ? 'cal-mission' : '';
+                let workClass = tasks.length > 0 ? 'cal-has-work' : '';
+                let todayClass = (new Date().toISOString().split('T')[0] === dateStr) ? 'cal-today' : '';
+
+                container.innerHTML += `
+                    <div class="cal-day ${missionClass} ${workClass} ${todayClass}" onclick="selectCalendarDate('${dateStr}')">
+                        <span class="cal-num">${d}</span>
+                        ${badgeHTML}
+                    </div>
+                `;
+            }
+
+            let summaryEl = document.getElementById('cal_summary');
+            if (summaryEl) {
+                let count = Object.keys(groups).length;
+                summaryEl.innerText = `มีงานนัดหมายแล้ว ${count} วันในเดือนนี้`;
+            }
+        }
+
+        function changeCalendarMonth(delta) {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + delta);
+            renderVisualCalendar();
+        }
+
+        function selectCalendarDate(dateStr) {
+            document.getElementById('survey_date').value = dateStr;
+            loadSavedSchedule();
+            const modalEl = document.getElementById('calendarModal');
+            const modal = bootstrap.Modal.getInstance(modalEl);
+            if (modal) modal.hide();
+        }
+
+        async function distributeRemainingTime() {
+            let schedDate = document.getElementById('survey_date').value;
+            if (!schedDate) return Swal.fire('ข้อมูล', 'กรุณาเลือกวันที่ต้องการเติมงาน', 'warning');
+
+            let startMin = timeStrToMins(document.getElementById('sched_start').value || "09:00");
+            let endMin = timeStrToMins(document.getElementById('sched_end').value || "16:00");
+            let avgMin = parseInt(document.getElementById('avg_time').value) || 60;
+            let maxPerDay = parseInt(document.getElementById('max_per_day').value) || 5;
+
+            let existing = queueData.filter(q => q.survey_date === schedDate && q.status === 'รอรังวัด');
+            if (existing.length >= maxPerDay) return Swal.fire('คิวเต็ม', 'วันนี้จัดงานเต็มจำนวนแปลงต่อวันแล้ว', 'info');
+
+            let lastEnd = startMin;
+            existing.forEach(ex => {
+                let parts = (ex.survey_time || '').split(' - ');
+                if (parts.length > 1) {
+                    let end = timeStrToMins(parts[1]);
+                    if (end > lastEnd) lastEnd = end;
+                }
+            });
+
+            if (lastEnd + avgMin > endMin) return Swal.fire('เวลาหมด', 'วันนี้ไม่เหลือเวลาเพียงพอสำหรับการนัดเพิ่ม', 'info');
+
+            let pending = queueData.filter(q => {
+                const s = q.status;
+                return (s === 'พร้อมรังวัด' || s === 'สอบสวนสิทธิแล้ว') && (!q.survey_date || q.survey_date === '-');
+            });
+
+            if (pending.length === 0) return Swal.fire('ไม่มีงานค้าง', 'ไม่พบรายการที่พร้อมนัดในฐานข้อมูล', 'info');
+
+            let q = pending[0];
+            let timeRange = `${minsToTimeStr(lastEnd)} - ${minsToTimeStr(lastEnd + avgMin)}`;
+
+            const { value: confirm } = await Swal.fire({
+                title: 'เติมงานลงเวลาว่าง?',
+                text: `จะนัดคุณ ${q.name} ลงเวลา ${timeRange} ของวันนี้`,
+                icon: 'question',
+                showCancelButton: true
+            });
+
+            if (confirm) {
+                Swal.fire({ title: 'กำลังนัดเพิ่ม...', didOpen: () => Swal.showLoading() });
+                await fetch(GAS_URL, {
+                    method: 'POST', mode: 'no-cors',
+                    body: JSON.stringify({
+                        action: 'update_survey_item', update_type: 'reschedule',
+                        case_id: q.id, new_date: schedDate, new_time: timeRange
+                    })
+                });
+                Swal.fire('สำเร็จ', 'นัดหมายเพิ่มเติมเรียบร้อย', 'success');
+                loadQueueFromSheet();
+            }
+        }
     </script>
+
+    <!-- Additional Modal & Styles -->
+    <div class="modal fade" id="calendarModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content overflow-hidden border-0 shadow-lg" style="border-radius:20px;">
+                <div class="modal-header bg-dark text-white border-0 py-3">
+                    <h5 class="modal-title fw-bold">
+                        <i class="fa-solid fa-calendar-check me-2 text-warning"></i>แผนผังการออกรังวัดรายเดือน
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <button class="btn btn-sm btn-outline-secondary rounded-circle"
+                                onclick="changeCalendarMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+                            <h4 class="mb-0 fw-bold" id="cal_month_title"></h4>
+                            <button class="btn btn-sm btn-outline-secondary rounded-circle"
+                                onclick="changeCalendarMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
+                        </div>
+                        <div class="d-flex gap-3 small">
+                            <span><i class="fa-solid fa-square text-primary opacity-25"></i> ช่วงราชการ</span>
+                            <span><i class="fa-solid fa-circle text-primary"></i> มีงานนัดหมาย</span>
+                        </div>
+                    </div>
+                    <div class="calendar-grid-header mb-2">
+                        <div>อา.</div>
+                        <div>จ.</div>
+                        <div>อ.</div>
+                        <div>พ.</div>
+                        <div>พฤ.</div>
+                        <div>ศ.</div>
+                        <div>ส.</div>
+                    </div>
+                    <div class="calendar-grid" id="calendar_grid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <style>
+        .calendar-grid-header {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            font-weight: bold;
+            color: #666;
+            font-size: 0.8rem;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .cal-day {
+            background: white;
+            border-radius: 12px;
+            aspect-ratio: 1/1;
+            position: relative;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        .cal-day:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: #0d6efd;
+            z-index: 10;
+        }
+
+        .cal-num {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #444;
+            z-index: 1;
+        }
+
+        .cal-empty {
+            background: transparent;
+            border: none;
+            cursor: default;
+        }
+
+        .cal-empty:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .cal-badge {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.65rem;
+            font-weight: bold;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .cal-mission {
+            background-color: #e7f1ff;
+            border-color: #cfe2ff;
+        }
+
+        .cal-today {
+            border: 2px solid #0d6efd;
+            background-color: #fff9db;
+        }
+
+        .cal-has-work {
+            background-color: #e6fffa;
+            border-color: #38b2ac !important;
+        }
+
+        .cal-has-work .cal-num {
+            color: #2c7a7b;
+        }
+
+        .cal-today .cal-num {
+            color: #0d6efd;
+        }
+    </style>
 </body>
 
 </html>
