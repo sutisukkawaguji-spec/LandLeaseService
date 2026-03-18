@@ -19,6 +19,9 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+    <script>
+        let isCloneMode = false;
+    </script>
 
     <style>
         body {
@@ -228,6 +231,64 @@
             display: flex;
             gap: 10px;
         }
+
+        /* Street View Floating Box for Main Screen */
+        #street-view-box-main {
+            position: absolute;
+            bottom: 20px;
+            right: 10px;
+            z-index: 1001;
+            width: 320px;
+            height: 240px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 2px solid #0d6efd;
+            resize: both;
+            min-width: 150px;
+            min-height: 110px;
+        }
+
+        .sv-header {
+            background: #0d6efd;
+            color: #fff;
+            padding: 2px 8px;
+            font-family: 'Sarabun', sans-serif;
+            font-size: 11px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            cursor: move;
+        }
+
+        .sv-body {
+            flex-grow: 1;
+            background: #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Sarabun', sans-serif;
+            color: #666;
+            font-size: 10px;
+            text-align: center;
+        }
+
+        .sv-body iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        #mini-map-main {
+            width: 100%;
+            height: 100%;
+            background: #eee;
+            display: none;
+        }
+    </style>
     </style>
 </head>
 
@@ -257,12 +318,18 @@
             <div class="resizer" id="resizer-queue"></div>
 
             <div class="col-form" id="col-form">
-                <div class="d-flex align-items-center mb-0 mt-2">
-                    <button class="btn btn-sm btn-outline-secondary me-3" onclick="window.location.href='index.html'">
-                        <i class="fa-solid fa-arrow-left"></i> หน้าหลัก
+                <div class="d-flex align-items-center justify-content-between mb-0 mt-2">
+                    <div class="d-flex align-items-center">
+                        <button class="btn btn-sm btn-outline-secondary me-3"
+                            onclick="window.location.href='index.html'">
+                            <i class="fa-solid fa-arrow-left"></i> หน้าหลัก
+                        </button>
+                        <h5 class="form-title mb-0">แบบบันทึกข้อมูลการพิสูจน์สอบสวนการทำประโยชน์ <span
+                                class="h6 text-muted">(แบบ สร.๒๕)</span></h5>
+                    </div>
+                    <button class="btn btn-sm btn-info text-white shadow-sm" onclick="importFromLast()">
+                        <i class="fa-solid fa-clock-rotate-left"></i> ดึงจากประวัติเก่า
                     </button>
-                    <h5 class="form-title mb-0">แบบบันทึกข้อมูลการพิสูจน์สอบสวนการทำประโยชน์ <span
-                            class="h6 text-muted">(แบบ สร.๒๕)</span></h5>
                 </div>
 
                 <hr class="mt-2 mb-3">
@@ -490,9 +557,19 @@
                 <!-- ส่วนแผนที่ -->
                 <div id="map-container">
                     <div id="map"></div>
+                    <!-- Street View Box -->
+                    <div id="street-view-box-main">
+                        <div class="sv-header">
+                            <span id="sv-title-main"><i class="fa-solid fa-street-view"></i> Street View</span>
+                        </div>
+                        <div id="sv-content-main" class="sv-body">
+                            <div id="mini-map-main"></div>
+                            <div id="sv-iframe-container-main" style="width:100%; height:100%;">คลิกบนแผนที่เพื่อดู</div>
+                        </div>
+                    </div>
 
                     <div class="map-controls-container"
-                        style="position: absolute; top: 10px; left: 50px; z-index: 1000;">
+                        style="position: absolute; top: 10px; left: 50px; z-index: 1000; display: flex; flex-direction: column; gap: 5px; align-items: flex-start;">
                         <button class="btn btn-sm btn-outline-primary bg-white shadow-sm fw-bold"
                             style="border: 2px solid #0d6efd;" onclick="openParallelMap()"
                             title="เปิดจอแผนที่คู่ขนานสำหรับประชาชน">
@@ -564,6 +641,9 @@
 
         let map, marker, layerControl, queueData = [];
         let allLayers = []; // เก็บเลเยอร์แผนที่ไว้ตรวจการทับซ้อน
+        let isProjectingMode = false;
+        let miniMapMain, miniTileLayerMain;
+        const mapChannel = new BroadcastChannel('map_sync');
 
         document.addEventListener('DOMContentLoaded', () => {
             initMap();
@@ -628,8 +708,6 @@
             layerControl = L.control.layers(baseMaps, overlayMaps).addTo(map);
 
             // --- ระบบแผนที่คู่ขนาน (Parallel Map Sync) ---
-            const mapChannel = new BroadcastChannel('map_sync');
-
             map.on('moveend zoomend', () => {
                 mapChannel.postMessage({
                     type: 'move',
@@ -645,6 +723,24 @@
                 });
             });
 
+            // คลิกขวาเพื่อดู Street View
+            map.on('contextmenu', e => {
+                updateStreetView(e.latlng);
+            });
+
+
+
+        function updateStreetView(latlng) {
+            if (!latlng) return;
+            const container = document.getElementById('sv-iframe-container-main');
+            if (container) {
+                document.getElementById('mini-map-main').style.display = 'none';
+                container.style.display = 'block';
+                document.getElementById('sv-title-main').innerHTML = '<i class="fa-solid fa-street-view"></i> Street View';
+                container.innerHTML = `<iframe src="https://maps.google.com/maps?layer=c&cbll=${latlng.lat},${latlng.lng}&cbp=12,20,0,0,5&output=svembed"></iframe>`;
+            }
+        }
+
             // ให้แสดงทีละ 1 เลเยอร์ (เมื่อผู้ใช้ติ๊กเลือกเลเยอร์ใหม่ ให้ซ่อนเลเยอร์เก่า)
             map.on('overlayadd', function (e) {
                 allLayers.forEach(l => {
@@ -652,14 +748,37 @@
                         map.removeLayer(l); // เอาเลเยอร์อื่นออก
                     }
                 });
-                // ปรับ Checkbox ใน Control ให้กลายเป็นแบบเลือกได้อันเดียว
+
+                // ส่งไปจอคู่ขนาน
+                mapChannel.postMessage({
+                    type: 'layer_sync',
+                    fileId: e.layer.options.fileId,
+                    visible: true
+                });
+
+                // ปรับ UI เล็กน้อย
                 setTimeout(() => {
                     document.querySelectorAll('.leaflet-control-layers-overlays input[type="checkbox"]').forEach(cb => {
-                        if (!cb.nextElementSibling.innerHTML.includes(e.name)) {
-                            cb.checked = false;
+                        if (cb.nextElementSibling.innerText.trim() !== e.name.replace(/■/g, '').trim()) {
+                            // cb.checked = false;
                         }
                     });
                 }, 10);
+            });
+
+            map.on('overlayremove', function (e) {
+                mapChannel.postMessage({
+                    type: 'layer_sync',
+                    fileId: e.layer.options.fileId,
+                    visible: false
+                });
+            });
+
+            map.on('baselayerchange', function (e) {
+                mapChannel.postMessage({
+                    type: 'base_sync',
+                    name: e.name
+                });
             });
 
             // ดักจับการคลิกบนแผนที่ (เพื่อให้สามารถย้ายหมุดถัดจากการยื่นคำร้องได้)
@@ -681,8 +800,51 @@
                 let pos = event.target.getLatLng();
                 document.getElementById('ref_coords').innerText = pos.lat.toFixed(6) + ", " + pos.lng.toFixed(6);
                 checkOverlap(pos);
+                updateStreetView(pos);
+            });
+
+            updateStreetView(latlng);
+        }
+
+        function updateStreetView(latlng) {
+            if (!latlng) return;
+            const svContent = document.getElementById('sv-content-main');
+            if (svContent) {
+                svContent.innerHTML = `<iframe src="https://maps.google.com/maps?layer=c&cbll=${latlng.lat},${latlng.lng}&cbp=12,20,0,0,5&output=svembed"></iframe>`;
+            }
+            // ส่งไปจอคู่ขนานด้วย
+            mapChannel.postMessage({
+                type: 'street_view',
+                latlng: latlng
             });
         }
+
+        // ระบบลากวางและซิงก์การขยายกล่อง
+        function initSVControls() {
+            const el = document.getElementById('street-view-box-main');
+            if (!el) return;
+
+            // ลากวาง
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            const header = el.querySelector('.sv-header');
+            if (header) header.onmousedown = (e) => {
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; };
+                document.onmousemove = (e) => {
+                    e.preventDefault();
+                    pos1 = pos3 - e.clientX;
+                    pos2 = pos4 - e.clientY;
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    el.style.top = (el.offsetTop - pos2) + "px";
+                    el.style.left = (el.offsetLeft - pos1) + "px";
+                    el.style.bottom = 'auto'; el.style.right = 'auto';
+                };
+            };
+        }
+        document.addEventListener('DOMContentLoaded', initSVControls);
 
         // สุ่มสีเส้นขอบแผนที่
         function getRandomColor() {
@@ -713,6 +875,7 @@
 
                                             // สร้าง Layer จาก GeoJSON
                                             let layer = L.geoJSON(jsonData, {
+                                                fileId: fileInfo.id, // เก็บ ID ไฟล์ไว้ใช้อ้างอิง
                                                 style: {
                                                     color: color,
                                                     weight: 2,
@@ -725,6 +888,15 @@
                                                     let name = p["Land numbe"] || p["Land number"] || p.plot_no || p.Name || '-';
                                                     let area_str = `${p.rai || 0} ไร่ ${p.ngan || 0} งาน ${p.sqwa || 0} วา`;
                                                     l.bindPopup(`<b>ไฟล์: ${fileInfo.filename}</b><br>แปลงที่: ${name}<br>เนื้อที่: ${area_str}`);
+
+                                                    // เมื่อคลิกที่แปลง ให้ส่ง Pop-up ไปจอคู่ขนานด้วย
+                                                    l.on('click', function (e) {
+                                                        mapChannel.postMessage({
+                                                            type: 'popup',
+                                                            latlng: e.latlng,
+                                                            content: l.getPopup().getContent()
+                                                        });
+                                                    });
                                                 }
                                             });
 
@@ -842,9 +1014,28 @@
         function loadCase(id) {
             let item = queueData.find(x => x.id === id); if (!item) return;
 
+            // เก็บ ID ปัจจุบันไว้กรณีอยู่ในโหมด Clone
+            let currentCaseId = document.getElementById('case_id').value;
+            let tempIsClone = isCloneMode;
+
             // --- ส่วน Auto-fill ในแบบฟอร์ม (กลาง) ---
             resetForm(); // ล้างของเก่าก่อนกดเลือกเคสใหม่ จะได้ไม่ไปลบข้อมูลที่กำลังจะบรรจุต่อไป
             document.getElementById('case_id').value = item.id;
+
+            // หากอยู่ในโหมดกู้ข้อมูลเพื่อสร้างเป็นรายการใหม่ ให้คืนค่า ID เดิมที่รันอัตโนมัติไว้
+            if (tempIsClone && currentCaseId) {
+                document.getElementById('case_id').value = currentCaseId;
+                isCloneMode = false; // ปิดโหมด
+                Swal.fire({
+                    title: 'คัดลอกสำเร็จ',
+                    text: 'ดึงข้อมูลสอบสวนเดิมมาลงในฟอร์มแล้ว',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
+                });
+            }
 
             // --- ส่วน Reference ขวามือ ---
             document.getElementById('ref_name').innerText = item.req_name || item.name || '-';
@@ -1000,6 +1191,29 @@
                 document.getElementById('overlap_alert').style.display = 'none';
             }
         }
+
+        function importFromLast() {
+            // เปิดโหมด Clone
+            isCloneMode = true;
+            Swal.fire({
+                title: 'โหมดดึงข้อมูลเก่า',
+                text: 'กรุณาคลิกเลือกรายการที่เคยสอบสวนแล้วจากแถบด้านซ้าย เพื่อดึงข้อมูลมาใช้ตั้งต้น',
+                icon: 'info',
+                toast: true,
+                position: 'top',
+                showConfirmButton: false,
+                timer: 5000,
+                timerProgressBar: true
+            });
+            // ไฮไลต์บอกผู้ใช้หน่่อย
+            const sidebar = document.querySelector('.col-queue');
+            if (sidebar) {
+                sidebar.classList.add('border', 'border-info', 'border-5', 'animate-pulse');
+                setTimeout(() => {
+                    sidebar.classList.remove('border', 'border-info', 'border-5', 'animate-pulse');
+                }, 5000);
+            }
+        }
         function gatherData() {
             let data = {};
 
@@ -1050,9 +1264,8 @@
             // แนวนโยบายใหม่: ตรวจสอบ Option ที่ผู้ใช้กดมาจากปุ่ม
             data.status = statusOption;
 
-            Swal.fire({ title: 'กำลังบันทึก...', text: `อัปโหลดสถานะ: ${statusOption}`, didOpen: () => Swal.showLoading() });
-
             const executeSave = () => {
+                Swal.fire({ title: 'กำลังบันทึก...', text: `อัปโหลดสถานะ: ${statusOption}`, didOpen: () => Swal.showLoading() });
                 fetch(GAS_URL, {
                     method: 'POST',
                     mode: 'no-cors', // สำคัญมาก เพื่อไม่ให้ติด CORS Block
@@ -1068,6 +1281,7 @@
                         });
 
                         setTimeout(() => {
+                            resetForm();
                             loadQueueFromSheet(); // โหลดคิวใหม่เพื่ออัปเดตสถานะ
                         }, 2500);
                     })
@@ -1082,7 +1296,7 @@
             if (existing && (existing.status === 'สอบสวนสิทธิเสร็จสิ้น' || existing.status === 'ไม่สมบูรณ์')) {
                 Swal.fire({
                     title: 'บันทึกซ้ำ?',
-                    text: `คิวงาน ${caseId} เคยมีการสอบสวนสิทธิไปแล้ว คุณต้องการบันทึกทับข้อมูลเดิมหรือไม่?`,
+                    text: `คิวงาน ${caseId} มีประวัติอยู่แล้ว ต้องการบันทึกทับหรือไม่?`,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'ตกลง (บันทึกทับ)',
@@ -1091,7 +1305,6 @@
                     cancelButtonColor: '#d33'
                 }).then((r) => {
                     if (r.isConfirmed) {
-                        Swal.fire({ title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading() });
                         executeSave();
                     }
                 });

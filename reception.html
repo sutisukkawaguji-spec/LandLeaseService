@@ -19,6 +19,10 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+    <script>
+        let isCloneMode = false; // โหมดคัดลอกข้อมูลเป็นรายการใหม่ (เก็บ ID -NEW ไว้)
+        let isProjectingMode = false; // โหมดลากครอบพื้นที่สะท้อน
+    </script>
 
     <style>
         body {
@@ -180,13 +184,72 @@
             position: absolute;
             bottom: 20px;
             left: 10px;
-            right: 10px;
+            right: 170px;
+            /* เวลากรณีมีกล่อง SV */
             z-index: 1000;
             background: rgba(255, 255, 255, 0.9);
             padding: 10px;
             border-radius: 5px;
             box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
             font-size: 0.8rem;
+        }
+
+        /* Street View Floating Box for Main Screen */
+        #street-view-box-main {
+            position: absolute;
+            bottom: 20px;
+            right: 10px;
+            z-index: 1001;
+            width: 320px;
+            /* เพิ่มขนาดตั้งต้นให้นิดนึงเพื่อให้เห็นชัด */
+            height: 240px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 2px solid #0d6efd;
+            resize: both;
+            min-width: 150px;
+            min-height: 110px;
+        }
+
+        .sv-header {
+            background: #0d6efd;
+            color: #fff;
+            padding: 2px 8px;
+            font-family: 'Sarabun', sans-serif;
+            font-size: 11px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            cursor: move;
+        }
+
+        .sv-body {
+            flex-grow: 1;
+            background: #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Sarabun', sans-serif;
+            color: #666;
+            font-size: 10px;
+            text-align: center;
+        }
+
+        .sv-body iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        #mini-map-main {
+            width: 100%;
+            height: 100%;
+            background: #eee;
+            display: none;
         }
 
         .footer-buttons {
@@ -236,9 +299,14 @@
                         </button>
                         <i class="fa-solid fa-file-contract"></i> บันทึกคำร้อง
                     </h5>
-                    <button class="btn btn-sm btn-primary shadow-sm" onclick="readSmartCard()">
-                        <i class="fa-solid fa-id-card"></i> อ่านบัตรประชาชน
-                    </button>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-sm btn-info text-white shadow-sm" onclick="importFromLast()">
+                            <i class="fa-solid fa-clock-rotate-left"></i> ดึงจากประวัติเก่า
+                        </button>
+                        <button class="btn btn-sm btn-primary shadow-sm" onclick="readSmartCard()">
+                            <i class="fa-solid fa-id-card"></i> อ่านบัตรประชาชน
+                        </button>
+                    </div>
                 </div>
 
                 <form id="main_form">
@@ -417,6 +485,16 @@
 
             <div class="col-map p-0" id="col-map">
                 <div id="map"></div>
+                <!-- Street View Box -->
+                <div id="street-view-box-main">
+                    <div class="sv-header">
+                        <span id="sv-title-main"><i class="fa-solid fa-street-view"></i> Street View</span>
+                    </div>
+                    <div id="sv-content-main" class="sv-body">
+                        <div id="mini-map-main"></div>
+                        <div id="sv-iframe-container-main" style="width:100%; height:100%;">คลิกบนแผนที่เพื่อดู</div>
+                    </div>
+                </div>
 
                 <div class="map-controls-container">
                     <button class="btn-pin shadow-sm" id="btn_pin_toggle" onclick="togglePinMode()">
@@ -461,11 +539,11 @@
         const GAS_URL = CONFIG.GAS_URL;
         const LOCAL_API = CONFIG.LOCAL_API;
 
-        let map, marker, layerControl;
+        let map, marker, layerControl, isPinningMode = false;
         let allLayers = [];     // เก็บเลเยอร์ทั้งหมดไว้เช็คทับซ้อน
         let onlineDB = [];      // เก็บข้อมูลคิวงาน
         let attCount = 0;
-        let isPinningMode = false;
+        const mapChannel = new BroadcastChannel('map_sync');
 
         // เริ่มทำงานเมื่อเปิดหน้าเว็บ
         document.addEventListener('DOMContentLoaded', () => {
@@ -582,6 +660,23 @@
                 }
             });
 
+            // คลิกขวาที่ไหนก็ได้ เพื่อดู Street View
+            map.on('contextmenu', e => {
+                updateStreetView(e.latlng);
+            });
+
+
+        function updateStreetView(latlng) {
+            if (!latlng) return;
+            const container = document.getElementById('sv-iframe-container-main');
+            if (container) {
+                document.getElementById('mini-map-main').style.display = 'none';
+                container.style.display = 'block';
+                document.getElementById('sv-title-main').innerHTML = '<i class="fa-solid fa-street-view"></i> Street View';
+                container.innerHTML = `<iframe src="https://maps.google.com/maps?layer=c&cbll=${latlng.lat},${latlng.lng}&cbp=12,20,0,0,5&output=svembed"></iframe>`;
+            }
+        }
+
             // ให้แสดงทีละ 1 เลเยอร์ (เมื่อผู้ใช้ติ๊กเลือกเลเยอร์ใหม่ ให้ซ่อนเลเยอร์เก่า)
             map.on('overlayadd', function (e) {
                 allLayers.forEach(l => {
@@ -589,14 +684,37 @@
                         map.removeLayer(l); // เอาเลเยอร์อื่นออก
                     }
                 });
-                // ปรับ Checkbox ใน Control ให้กลายเป็นแบบเลือกได้อันเดียว
+
+                // ส่งไปจอคู่ขนาน
+                mapChannel.postMessage({
+                    type: 'layer_sync',
+                    fileId: e.layer.options.fileId,
+                    visible: true
+                });
+
+                // ปรับ UI เล็กน้อย (ในกรณีที่อยากให้ checkbox แสดงเหมือน radio button)
                 setTimeout(() => {
                     document.querySelectorAll('.leaflet-control-layers-overlays input[type="checkbox"]').forEach(cb => {
-                        if (!cb.nextElementSibling.innerHTML.includes(e.name)) {
-                            cb.checked = false;
+                        if (cb.nextElementSibling.innerText.trim() !== e.name.replace(/■/g, '').trim()) {
+                            // cb.checked = false; // ปิดไว้ก่อนก็ได้ จะได้ไม่รบกวน Leaflet ภายใน
                         }
                     });
                 }, 10);
+            });
+
+            map.on('overlayremove', function (e) {
+                mapChannel.postMessage({
+                    type: 'layer_sync',
+                    fileId: e.layer.options.fileId,
+                    visible: false
+                });
+            });
+
+            map.on('baselayerchange', function (e) {
+                mapChannel.postMessage({
+                    type: 'base_sync',
+                    name: e.name
+                });
             });
 
             // ==========================================
@@ -682,6 +800,7 @@
 
                                             // สร้าง Layer จาก GeoJSON
                                             let layer = L.geoJSON(jsonData, {
+                                                fileId: fileInfo.id, // เก็บ ID ไฟล์ไว้ใช้อ้างอิง
                                                 style: {
                                                     color: color,
                                                     weight: 2,
@@ -708,11 +827,17 @@
 
                                                             // เติมเนื้อที่อัตโนมัติถ้ามีข้อมูล
                                                             if (p.rai || p.ngan || p.sqwa) {
-                                                                document.getElementById('rent_purpose').value = 'เกษตรกรรม';
                                                                 if (p.rai) document.getElementById('area_rai').value = p.rai;
                                                                 if (p.ngan) document.getElementById('area_ngan').value = p.ngan;
                                                                 if (p.sqwa) document.getElementById('area_wa').value = p.sqwa;
                                                             }
+
+                                                            // ส่ง Pop-up ไปจอคู่ขนาน
+                                                            mapChannel.postMessage({
+                                                                type: 'popup',
+                                                                latlng: e.latlng,
+                                                                content: l.getPopup().getContent()
+                                                            });
                                                         }
                                                     });
                                                 }
@@ -805,7 +930,50 @@
             marker = L.marker(latlng).addTo(map);
             document.getElementById('val_lat').innerText = latlng.lat.toFixed(6);
             document.getElementById('val_lng').innerText = latlng.lng.toFixed(6);
+
+            // อัปเดต Street View
+            updateStreetView(latlng);
         }
+
+        function updateStreetView(latlng) {
+            if (!latlng) return;
+            const svContent = document.getElementById('sv-content-main');
+            if (svContent) {
+                svContent.innerHTML = `<iframe src="https://maps.google.com/maps?layer=c&cbll=${latlng.lat},${latlng.lng}&cbp=12,20,0,0,5&output=svembed"></iframe>`;
+            }
+            // ส่งไปจอคู่ขนานด้วย
+            mapChannel.postMessage({
+                type: 'street_view',
+                latlng: latlng
+            });
+        }
+
+        // ระบบลากวางและซิงก์การขยายกล่อง
+        function initSVControls() {
+            const el = document.getElementById('street-view-box-main');
+            if (!el) return;
+
+            // ลากวาง
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            const header = el.querySelector('.sv-header');
+            if (header) header.onmousedown = (e) => {
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = () => { document.onmouseup = null; document.onmousemove = null; };
+                document.onmousemove = (e) => {
+                    e.preventDefault();
+                    pos1 = pos3 - e.clientX;
+                    pos2 = pos4 - e.clientY;
+                    pos3 = e.clientX;
+                    pos4 = e.clientY;
+                    el.style.top = (el.offsetTop - pos2) + "px";
+                    el.style.left = (el.offsetLeft - pos1) + "px";
+                    el.style.bottom = 'auto'; el.style.right = 'auto';
+                };
+            };
+        }
+        document.addEventListener('DOMContentLoaded', initSVControls);
 
         function deletePin() {
             if (marker) map.removeLayer(marker);
@@ -834,6 +1002,29 @@
                     });
                 }
             }).catch(() => Swal.fire('Error', 'ไม่สามารถเชื่อมต่อ Hardware Service ได้ (รัน hardware_service.py หรือยัง?)', 'error'));
+        }
+
+        function importFromLast() {
+            // สั่งเปิดโหมด Clone และแจ้งผู้ใช้
+            isCloneMode = true;
+            Swal.fire({
+                title: 'โหมดดึงข้อมูลเก่า',
+                text: 'กรุณาคลิกเลือกผู้ขอที่เคยมีประวัติ จากแถบ "คิวรับคำร้อง" ทางด้านซ้าย เพื่อดึงข้อมูลมาใช้ตั้งต้นเป็นคำร้องใหม่',
+                icon: 'info',
+                toast: true,
+                position: 'top',
+                showConfirmButton: false,
+                timer: 5000,
+                timerProgressBar: true
+            });
+            // ไฮไลต์บอกผู้ใช้หน่อย
+            const sidebar = document.getElementById('col-sidebar');
+            if (sidebar) {
+                sidebar.classList.add('border', 'border-info', 'border-5', 'animate-pulse');
+                setTimeout(() => {
+                    sidebar.classList.remove('border', 'border-info', 'border-5', 'animate-pulse');
+                }, 5000);
+            }
         }
 
         function parseAddress(fullAddr) {
@@ -951,6 +1142,11 @@
 
         function loadItem(id) {
             let item = onlineDB.find(x => x.id === id); if (!item) return;
+
+            // เก็บ ID ปัจจุบันไว้กรณีอยู่ในโหมด Clone
+            let currentNewId = document.getElementById('req_id').value;
+            let tempIsClone = isCloneMode;
+
             resetForm(); // ล้างของเก่าให้หมดก่อน
 
             // วนลูปจับคู่ชื่อคอลัมน์จาก Sheet ให้ตรงกับ ID ของ Input ในหน้าเว็บ
@@ -984,6 +1180,21 @@
             // การจัดการฟิลด์พิเศษ
             if (item.id) document.getElementById('req_id').value = item.id;
             if (item.plot_no) document.getElementById('plot_id').value = item.plot_no;
+
+            // หากอยู่ในโหมดกู้ข้อมูลเพื่อสร้างเป็นรายการใหม่ ให้คืนค่า ID เดิมที่รันอัตโนมัติไว้
+            if (tempIsClone) {
+                document.getElementById('req_id').value = currentNewId;
+                isCloneMode = false; // ปิดโหมด
+                Swal.fire({
+                    title: 'คัดลอกสำเร็จ',
+                    text: 'ดึงข้อมูลมาลงในฟอร์มแล้ว (พร้อมรับคำร้องใหม่)',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false,
+                    toast: true,
+                    position: 'top-end'
+                });
+            }
 
             // แก้ปัญหาวันที่หาย (ตรวจสอบทั้ง fild 'date' และ 'req_date')
             let dateVal = item.req_date || item.date;
@@ -1114,9 +1325,8 @@
             if (payload.req_cid && payload.req_cid !== "-") payload.req_cid = "'" + payload.req_cid;
             if (payload.cid && payload.cid !== "-") payload.cid = "'" + payload.cid;
 
-            Swal.fire({ title: 'กำลังบันทึก...', text: 'อัปโหลดข้อมูลลงระบบ', didOpen: () => Swal.showLoading() });
-
             const executeSave = () => {
+                Swal.fire({ title: 'กำลังบันทึก...', text: 'อัปโหลดข้อมูลลงระบบ', didOpen: () => Swal.showLoading() });
                 fetch(GAS_URL, {
                     method: 'POST',
                     // mode: 'cors' เพื่อให้อ่าน Response JSON ได้ (ไม่ใช่ no-cors)
@@ -1138,6 +1348,7 @@
                                 showConfirmButton: true
                             });
                             setTimeout(() => {
+                                resetForm();
                                 loadQueueFromSheet();
                             }, 2500);
                         } else {
@@ -1152,7 +1363,7 @@
             if (!isNewDraft && onlineDB.some(x => x.id === data.id)) {
                 Swal.fire({
                     title: 'บันทึกซ้ำ?',
-                    text: `คำร้องเลขที่ ${data.id} มีอยู่แล้ว คุณต้องการบันทึกทับหรือไม่?`,
+                    text: `คำร้องเลขที่ ${data.id} มีอยู่แล้ว ต้องการบันทึกทับหรือไม่?`,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'ตกลง (บันทึกทับ)',
@@ -1161,7 +1372,6 @@
                     cancelButtonColor: '#d33'
                 }).then((r) => {
                     if (r.isConfirmed) {
-                        Swal.fire({ title: 'กำลังบันทึก...', didOpen: () => Swal.showLoading() });
                         executeSave();
                     }
                 });

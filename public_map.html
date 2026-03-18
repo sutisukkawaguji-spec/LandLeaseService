@@ -90,6 +90,59 @@
             color: #333;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
+
+        #street-view-box {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1001;
+            width: 320px;
+            height: 240px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 2px solid #0d6efd;
+            resize: both;
+            min-width: 150px;
+            min-height: 110px;
+        }
+
+        .sv-header {
+            background: #0d6efd;
+            color: #fff;
+            padding: 5px 10px;
+            font-family: 'Sarabun', sans-serif;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: move;
+        }
+
+        .sv-body {
+            flex-grow: 1;
+            background: #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Sarabun', sans-serif;
+            color: #666;
+            font-size: 13px;
+        }
+
+        .sv-body iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        #mini-map {
+            width: 100%;
+            height: 100%;
+            background: #eee;
+            display: none;
+        }
     </style>
 </head>
 
@@ -103,28 +156,48 @@
         <i class="fa-solid fa-landmark text-primary"></i> ระบบบริหารจัดการที่ดินราชพัสดุ
     </div>
 
+    <!-- Street View Window -->
+    <div id="street-view-box">
+        <div class="sv-header">
+            <span id="sv-title"><i class="fa-solid fa-street-view"></i> Street View (อัตโนมัติ)</span>
+        </div>
+        <div id="sv-content" class="sv-body">
+            <div id="mini-map"></div>
+            <div id="sv-iframe-container" style="width:100%; height:100%;">คลิกบนแผนที่เพื่อดูสตรีทวิว</div>
+        </div>
+    </div>
+
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="config.js"></script>
     <script>
+        const GAS_URL = CONFIG.GAS_URL;
+        let allLayers = [];
+        let layerControl;
+        let miniMap, miniTileLayer; // Declare miniMap and miniTileLayer
+
         // ใช้ Google Hybrid เป็นพื้นหลังสำหรับประชาชน (ชัดเจนที่สุด)
+        const street = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 22, attribution: 'Google Maps' });
+        const hybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22, attribution: 'Google Satellite' });
+
         const map = L.map('map', {
             zoomControl: true,
-            attributionControl: false
+            attributionControl: false,
+            layers: [hybrid]
         }).setView([17.221, 102.427], 13);
-
-        L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22 }).addTo(map);
 
         const mapChannel = new BroadcastChannel('map_sync');
         let ghostCursor = null;
 
+        // Initialize miniMap
+        initMiniMap();
+
         mapChannel.onmessage = (e) => {
             const data = e.data;
             if (data.type === 'move') {
-                // ซิงค์ตำแหน่งและซูม (ใช้ระยะเวลาสั้นๆ เพื่อให้ดูสมูท)
                 map.setView(data.center, data.zoom, { animate: true, duration: 0.25 });
             } else if (data.type === 'hover') {
-                // ซิงค์ตำแหน่งเมาส์ของเจ้าหน้าที่
                 if (!ghostCursor) {
                     ghostCursor = L.marker(data.latlng, {
                         icon: L.divIcon({
@@ -139,10 +212,151 @@
                 } else {
                     ghostCursor.setLatLng(data.latlng);
                 }
+            } else if (data.type === 'base_sync') {
+                // ซิงก์แผนที่พื้นหลัง (Satellite / Streets)
+                if (data.name === "แผนที่ถนน") {
+                    street.addTo(map);
+                    map.removeLayer(hybrid);
+                } else {
+                    hybrid.addTo(map);
+                    map.removeLayer(street);
+                }
+            } else if (data.type === 'layer_sync') {
+                // ซิงก์เลเยอร์ แผนที่ GeoJSON จากหน้าจอกลาง (ใช้ fileId อ้างอิง)
+                allLayers.forEach(l => {
+                    if (l.options.fileId === data.fileId) {
+                        if (data.visible) {
+                            l.addTo(map);
+                        } else {
+                            map.removeLayer(l);
+                        }
+                    } else if (data.visible) {
+                        // ถ้าหน้าจอกลางสั่งเปิดเลเยอร์ใหม่ ให้ปิดเลเยอร์อื่น (เพื่อให้แสดงทีละ 1 เหมือนกัน)
+                        map.removeLayer(l);
+                    }
+                });
+            } else if (data.type === 'popup') {
+                // ซิงค์ Pop-up เมื่อเจ้าหน้าที่คลิกที่แปลงที่ดิน
+                L.popup({ autoClose: false })
+                    .setLatLng(data.latlng)
+                    .setContent(data.content || "ข้อมูลแปลงที่ดิน")
+                    .openOn(map);
+
+                // อัปเดต Street View อัตโนมัติ
+                updateStreetView(data.latlng);
+            } else if (data.type === 'street_view') {
+                updateStreetView(data.latlng);
             } else if (data.type === 'close') {
                 window.close();
             }
         };
+
+        function initDraggable(el) {
+            let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+            const header = el.querySelector('.sv-header');
+            if (header) header.onmousedown = dragMouseDown;
+            else el.onmousedown = dragMouseDown;
+
+            function dragMouseDown(e) {
+                e = e || window.event;
+                e.preventDefault();
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                document.onmouseup = closeDragElement;
+                document.onmousemove = elementDrag;
+                el.style.transition = 'none'; // ปิด transition ขณะลาก
+            }
+
+            function elementDrag(e) {
+                e = e || window.event;
+                e.preventDefault();
+                pos1 = pos3 - e.clientX;
+                pos2 = pos4 - e.clientY;
+                pos3 = e.clientX;
+                pos4 = e.clientY;
+                el.style.top = (el.offsetTop - pos2) + "px";
+                el.style.left = (el.offsetLeft - pos1) + "px";
+                el.style.bottom = 'auto'; // ยกเลิกการยึดขอบล่าง
+                el.style.right = 'auto'; // ยกเลิกการยึดขอบขวา
+            }
+
+            function closeDragElement() {
+                document.onmouseup = null;
+                document.onmousemove = null;
+                el.style.transition = 'all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1)'; // คืนค่า transition
+            }
+        }
+
+        // เริ่มต้นระบบลากและวาง
+        initDraggable(document.getElementById('street-view-box'));
+
+        function initMiniMap() {
+            miniMap = L.map('mini-map', {
+                zoomControl: false,
+                attributionControl: false,
+                dragging: false,
+                scrollWheelZoom: false,
+                doubleClickZoom: false,
+                boxZoom: false,
+                keyboard: false,
+                touchZoom: false
+            });
+            miniTileLayer = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(miniMap);
+        }
+
+        function updateStreetView(latlng) {
+            if (!latlng) return;
+            const svContent = document.getElementById('sv-content');
+            const container = document.getElementById('sv-iframe-container');
+            if (container) {
+                document.getElementById('mini-map').style.display = 'none';
+                container.style.display = 'block';
+                document.getElementById('sv-title').innerHTML = '<i class="fa-solid fa-street-view"></i> Street View (อัตโนมัติ)';
+                container.innerHTML = `<iframe src="https://maps.google.com/maps?layer=c&cbll=${latlng.lat},${latlng.lng}&cbp=12,20,0,0,5&output=svembed"></iframe>`;
+            }
+        }
+
+        // --- ระบบดึงข้อมูล GeoJSON ---
+        function getRandomColor() {
+            const letters = '0123456789ABCDEF';
+            let color = '#';
+            for (let i = 0; i < 6; i++) { color += letters[Math.floor(Math.random() * 16)]; }
+            return color;
+        }
+
+        function loadGeoJSONLayers() {
+            fetch(GAS_URL + '?action=get_map_list')
+                .then(r => r.json())
+                .then(res => {
+                    if (res.status === 'success' && res.list) {
+                        res.list.forEach(fileInfo => {
+                            fetch(GAS_URL + '?action=get_map_data&id=' + fileInfo.id)
+                                .then(r => r.json())
+                                .then(fileRes => {
+                                    if (fileRes.status === 'success') {
+                                        let jsonData = JSON.parse(fileRes.data_string);
+                                        let color = getRandomColor();
+                                        let layer = L.geoJSON(jsonData, {
+                                            fileId: fileInfo.id, // ใช้ ID จาก Drive
+                                            style: { color: color, weight: 2, opacity: 1, fillColor: color, fillOpacity: 0.3 },
+                                            onEachFeature: (feature, l) => {
+                                                let p = feature.properties;
+                                                let name = p["Land numbe"] || p["Land number"] || p.plot_no || p.Name || '-';
+                                                let area_str = `${p.rai || 0} ไร่ ${p.ngan || 0} งาน ${p.sqwa || 0} วา`;
+                                                l.bindPopup(`แปลงที่: ${name}<br>เนื้อที่: ${area_str}`);
+                                            }
+                                        });
+                                        allLayers.push(layer);
+                                        // ไม่ต้องใส่ layerControl ในหน้าคู่ขนาน (ตามคำขอ)
+                                    }
+                                });
+                        });
+                    }
+                });
+        }
+
+        // เริ่มโหลดเลเยอร์
+        loadGeoJSONLayers();
 
         // บอกหน้าจอหลักว่าพร้อมแล้ว
         mapChannel.postMessage({ type: 'ready' });

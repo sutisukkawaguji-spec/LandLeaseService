@@ -1,0 +1,599 @@
+function doGet(e) {
+  // ดึงพารามิเตอร์ action
+  var action = e ? e.parameter.action : null;
+  
+  if (action === 'ping') {
+    return ContentService.createTextOutput(JSON.stringify({ status: 'success', message: 'Connected' }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+
+  if (action === 'get_map_list') {
+    return getMapList();
+  }
+  if (action === 'get_map_data') {
+    return getMapData(e.parameter.id);
+  }
+  
+  // 1. ถ้ามีการระบุว่า action=get_map ให้ไปทำงานที่ระบบแผนที่
+  if (action === 'get_map') {
+    return getMapFiles();
+  }
+  
+  // 2. ถ้าไม่ได้ระบุ action หรือเป็นการโหลดหน้าแรก ให้ดึงข้อมูลคิวกลับไป
+  return getReqQueue();
+}
+
+function doPost(e) {
+  try {
+    // อ่านข้อมูลที่ส่งมาจาก HTML (ในรูปแบบ JSON String)
+    var data = JSON.parse(e.postData.contents);
+    
+    // ถ้าสั่งบันทึกข้อมูลคำร้องใหม่
+    if (data.action === 'save_reception') {
+      return saveReception(data);
+    } else if (data.action === 'save_investigation') {
+      return saveInvestigation(data);
+    } else if (data.action === 'delete_record') {
+      return deleteRecord(data);
+    } else if (data.action === 'save_survey_schedule') {
+      return saveSurveySchedule(data);
+    } else if (data.action === 'update_survey_item') {
+      return updateSurveyItem(data);
+    } else if (data.action === 'login') {
+      return authenticateUser(data);
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({status: 'error', message: 'Unknown action'}))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({status: 'error', message: err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ===============================================
+// ฟังก์ชัน 1: ดึงไฟล์แผนที่ (.json) จาก Google Drive
+// ===============================================
+function getMapFiles() {
+  // *** ต้องนำ ID โฟลเดอร์ใน Drive ที่เก็บไฟล์ .json มาใส่ที่นี่ ***
+  var FOLDER_ID = '1UgByuLmCTXImak4e1zJ8ngzv_bYxsf9Z'; 
+  
+  try {
+    var folder = DriveApp.getFolderById(FOLDER_ID);
+    var files = folder.getFiles();
+    var maps = [];
+    var loadedNames = {};
+    
+    // วนลูปอ่านทุกไฟล์ในโฟลเดอร์
+    while (files.hasNext()) {
+      var file = files.next();
+      var filename = file.getName().toLowerCase();
+      
+      // เช็คว่าเป็นไฟล์ .json หรือ .geojson ไหม
+      if (filename.endsWith('.json') || filename.endsWith('.geojson')) {
+        var baseName = filename.replace('.json', '').replace('.geojson', '');
+        if (loadedNames[baseName]) continue; // กันโหลดไฟล์ซ้ำถ้ามีทั้ง .json และ .geojson ในโฟลเดอร์เดียวกัน
+        loadedNames[baseName] = true;
+        
+        try {
+          var content = file.getBlob().getDataAsString('UTF-8');
+          var jsonData = JSON.parse(content); // แปลงเนื้อหาเป็น JSON object
+          
+          maps.push({
+            filename: file.getName(),
+            data: jsonData
+          });
+        } catch(e) {
+          // ข้ามไฟล์ที่โครงสร้าง JSON พัง
+          Logger.log('Error parsing JSON for file: ' + filename);
+        }
+      }
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({status: 'success', maps: maps}))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({status: 'error', message: err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ===============================================
+// ฟังก์ชัน 1.1: ดึงรายชื่อไฟล์แผนที่ทั้งหมด (.json) 
+// ===============================================
+function getMapList() {
+  var FOLDER_ID = '1UgByuLmCTXImak4e1zJ8ngzv_bYxsf9Z'; 
+  
+  try {
+    var folder = DriveApp.getFolderById(FOLDER_ID);
+    var files = folder.getFiles();
+    var list = [];
+    var loadedNames = {};
+    
+    // วนลูปอ่านทุกไฟล์ในโฟลเดอร์
+    while (files.hasNext()) {
+      var file = files.next();
+      var filename = file.getName().toLowerCase();
+      
+      // เช็คว่าเป็นไฟล์ .json หรือ .geojson ไหม
+      if (filename.endsWith('.json') || filename.endsWith('.geojson')) {
+        var baseName = filename.replace('.json', '').replace('.geojson', '');
+        if (loadedNames[baseName]) continue; // กันโหลดไฟล์ซ้ำ
+        loadedNames[baseName] = true;
+        
+        list.push({
+          id: file.getId(),
+          filename: file.getName()
+        });
+      }
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({status: 'success', list: list}))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({status: 'error', message: err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ===============================================
+// ฟังก์ชัน 1.2: ดึงข้อมูลไฟล์แผนที่ 1 ไฟล์ตาม ID ที่ระบุ
+// ===============================================
+function getMapData(fileId) {
+  try {
+    var file = DriveApp.getFileById(fileId);
+    var content = file.getBlob().getDataAsString('UTF-8');
+    
+    // ส่ง string เปล่าๆ กลับไปเลย ไม่ต้อง parse เป็น JSON ฝั่ง GAS ช่วยลดการกิน Memory มหาศาล
+    return ContentService.createTextOutput(JSON.stringify({
+      status: 'success', 
+      data_string: content
+    })).setMimeType(ContentService.MimeType.JSON);
+    
+  } catch(e) {
+    return ContentService.createTextOutput(JSON.stringify({status: 'error', message: e.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ===============================================
+// ฟังก์ชัน 2: ดึงคิวรับคำร้อง จาก Google Sheet
+// ===============================================
+function getReqQueue() {
+  // *** ต้องนำ ID ของไฟล์ Google Sheet มาใส่ที่นี่ ***
+  var SHEET_ID = '1kf10jeU_1ZqqNgLB6t4JGiAs4pwne6waiktI7Ydd2wQ';
+  var SHEET_NAME = 'Queue'; // ชื่อ Sheet ข้างล่าง (Tab)
+  
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(SHEET_NAME);
+    
+    if (!sheet) {
+      // ถ้าไม่มีหน้า Sheet ชื่อนี้ ให้คืนค่าว่าง
+      return ContentService.createTextOutput(JSON.stringify([]))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    var data = sheet.getDataRange().getValues();
+    if (data.length <= 1) { // มีแต่ Headings (หรือว่าง)
+       return ContentService.createTextOutput(JSON.stringify([]))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    var headers = data[0];
+    var result = [];
+    
+    // วนลูปเฉพาะบรรทัดที่เป็นข้อมูล (ข้าม headers บรรทัดแรกไป)
+    for (var i = 1; i < data.length; i++) {
+      var row = data[i];
+      var obj = {};
+      
+      // Map คอลัมน์เข้าเป็น key (ชื่อ id, name, plot_id, ...)
+      for (var j = 0; j < headers.length; j++) {
+        var key = headers[j] ? headers[j].toString().trim() : 'col_' + j; // เผื่อหัวตารางว่าง
+        if (key) {
+           obj[key] = row[j];
+        }
+      }
+      
+      // เช็คเฉพาะอันที่มีชื่อ หรือ id (ในชื่อฟิลด์หน้าเว็บคือ req_id, req_name)
+      if (obj.id || obj.name || obj.req_id || obj.req_name) {
+          // ตรวจสอบและแมปข้อมูลสำหรับแสดงผล
+          if (!obj.address && obj.req_address) obj.address = obj.req_address;
+          if (!obj.id && obj.req_id) obj.id = obj.req_id;
+          if (!obj.name && obj.req_name) obj.name = obj.req_name;
+          if (!obj.cid && obj.req_cid) obj.cid = obj.req_cid;
+          
+          result.push(obj);
+      }
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify(result))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify([])) // คืนค่า array ว่างๆ ถ้า error
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ===============================================
+// ฟังก์ชัน 3: บันทึกรับคำร้องลง Google Sheet (อัปเดตข้อมูลเก่าหรือเพิ่มใหม่)
+// ===============================================
+function saveReception(data) {
+  var SHEET_ID = '1kf10jeU_1ZqqNgLB6t4JGiAs4pwne6waiktI7Ydd2wQ'; 
+  var SHEET_NAME = 'Queue'; 
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000);
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(SHEET_NAME);
+    if (!sheet) return ContentService.createTextOutput(JSON.stringify({status: 'error', message: 'Sheet not found'})).setMimeType(ContentService.MimeType.JSON);
+
+    var headers = sheet.getLastColumn() > 0 ? sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function(h) { return h.toString().trim(); }) : [];
+    
+    // Auto-create headers
+    var keys = Object.keys(data);
+    var headersChanged = false;
+    for (var k = 0; k < keys.length; k++) {
+      var key = keys[k];
+      if (key !== 'action' && key !== 'attachments' && headers.indexOf(key) === -1) {
+        sheet.getRange(1, headers.length + 1).setValue(key);
+        headers.push(key);
+        headersChanged = true;
+      }
+    }
+
+    var idColIdx = headers.indexOf('req_id') !== -1 ? headers.indexOf('req_id') : headers.indexOf('id');
+    var targetId = data.req_id || data.id;
+
+    // Auto-increment for -NEW
+    if (targetId && targetId.indexOf('-NEW') !== -1 && idColIdx !== -1) {
+      var prefix = targetId.split('-NEW')[0];
+      var lastRow = sheet.getLastRow();
+      var nextNum = 1;
+      if (lastRow > 1) {
+        var allIds = sheet.getRange(2, idColIdx + 1, lastRow - 1, 1).getValues();
+        var maxSeq = 0;
+        for (var i = 0; i < allIds.length; i++) {
+          var cid = allIds[i][0].toString();
+          if (cid.indexOf(prefix) === 0) {
+            var seq = parseInt(cid.split('-').pop());
+            if (!isNaN(seq) && seq > maxSeq) maxSeq = seq;
+          }
+        }
+        nextNum = maxSeq + 1;
+      }
+      targetId = prefix + '-' + nextNum.toString().padStart(3, '0');
+      data.req_id = targetId;
+      data.id = targetId;
+    }
+
+    var rowData = headers.map(function(h) { return data[h] !== undefined ? data[h] : ''; });
+    var isUpdated = false;
+    var lastRow = sheet.getLastRow();
+    if (targetId && lastRow > 1 && idColIdx !== -1) {
+      var idData = sheet.getRange(2, idColIdx + 1, lastRow - 1, 1).getValues();
+      for (var r = 0; r < idData.length; r++) {
+        if (idData[r][0] == targetId) {
+          sheet.getRange(r + 2, 1, 1, headers.length).setValues([rowData]);
+          isUpdated = true;
+          break;
+        }
+      }
+    }
+    if (!isUpdated) sheet.appendRow(rowData);
+
+    lock.releaseLock();
+    return ContentService.createTextOutput(JSON.stringify({status: 'success', generated_id: targetId})).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    if (lock) lock.releaseLock();
+    return ContentService.createTextOutput(JSON.stringify({status: 'error', message: err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ===============================================
+// ฟังก์ชัน 4: บันทึกข้อมูลสอบสวนสิทธิลง Google Sheet
+// ===============================================
+function saveInvestigation(data) {
+  var SHEET_ID = '1kf10jeU_1ZqqNgLB6t4JGiAs4pwne6waiktI7Ydd2wQ'; 
+  var SHEET_NAME = 'Queue'; 
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(SHEET_NAME);
+    if (!sheet) return ContentService.createTextOutput(JSON.stringify({status: 'error', message: 'Sheet not found'})).setMimeType(ContentService.MimeType.JSON);
+    
+    var headers = sheet.getLastColumn() > 0 ? sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function(h) { return h.toString().trim(); }) : [];
+    
+    // Auto-create headers
+    var keys = Object.keys(data);
+    for (var k = 0; k < keys.length; k++) {
+      var key = keys[k];
+      if (key !== 'action' && key !== 'case_id' && headers.indexOf(key) === -1) {
+        sheet.getRange(1, headers.length + 1).setValue(key);
+        headers.push(key);
+      }
+    }
+    
+    if (!data.status) data.status = 'สอบสวนสิทธิแล้ว';
+
+    var targetId = data.case_id;
+    var lastRow = sheet.getLastRow();
+    if (targetId && lastRow > 1) {
+      var idColIdx = headers.indexOf('req_id') !== -1 ? headers.indexOf('req_id') : headers.indexOf('id');
+      if (idColIdx !== -1) {
+        var idData = sheet.getRange(2, idColIdx + 1, lastRow - 1, 1).getValues();
+        for (var r = 0; r < idData.length; r++) {
+          if (idData[r][0] == targetId) {
+             var rowRange = sheet.getRange(r + 2, 1, 1, headers.length);
+             var existingRow = rowRange.getValues()[0];
+             for (var i = 0; i < headers.length; i++) {
+               var hName = headers[i];
+               if (data[hName] !== undefined && data[hName] !== "") existingRow[i] = data[hName];
+             }
+             rowRange.setValues([existingRow]);
+             return ContentService.createTextOutput(JSON.stringify({status: 'success'})).setMimeType(ContentService.MimeType.JSON);
+          }
+        }
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify({status: 'error', message: 'Queue ID not found: ' + targetId})).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({status: 'error', message: err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ===============================================
+// ฟังก์ชัน 5: ยกเลิก/ลบ คำร้อง (เปลี่ยนสถานะเป็น ยกเลิก)
+// ===============================================
+function deleteRecord(data) {
+  var SHEET_ID = '1kf10jeU_1ZqqNgLB6t4JGiAs4pwne6waiktI7Ydd2wQ'; 
+  var SHEET_NAME = 'Queue'; 
+  
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(SHEET_NAME);
+    
+    if (!sheet) {
+      return ContentService.createTextOutput(JSON.stringify({status: 'error', message: 'ไม่พบหน้า Sheet'}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    var lastCol = sheet.getLastColumn();
+    var lastRow = sheet.getLastRow();
+    var headers = [];
+    if (lastCol > 0) {
+      headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(function(h) { return h.toString().trim(); });
+    }
+    
+    var targetId = data.id || data.case_id; 
+    var isUpdated = false;
+    
+    if (targetId && lastRow > 1) {
+      var idColIndex = headers.indexOf('req_id');
+      if (idColIndex === -1) idColIndex = headers.indexOf('id');
+      
+      var remarkColIndex = headers.indexOf('remark');
+      
+      if (idColIndex !== -1) {
+        var idData = sheet.getRange(2, idColIndex + 1, lastRow - 1, 1).getValues();
+        
+        for (var r = 0; r < idData.length; r++) {
+          if (idData[r][0] == targetId) {
+             // โหลดข้อมูลแถวเดิมมาก่อน
+             var existingRow = sheet.getRange(r + 2, 1, 1, headers.length).getValues()[0];
+             
+             // เปลี่ยนสถานะ
+             var statusColIndex = headers.indexOf('status');
+             if (statusColIndex !== -1) {
+                 existingRow[statusColIndex] = 'ยกเลิก';
+             }
+             
+             // บันทึกหมายเหตุ
+             if (remarkColIndex !== -1 && data.remark) {
+                 // ถ้ามีหมายเหตุเดิม ให้เอามาต่อกัน หรือเขียนทับ
+                 var oldRemark = existingRow[remarkColIndex] || '';
+                 existingRow[remarkColIndex] = oldRemark ? oldRemark + ' | [ยกเลิก] ' + data.remark : '[ยกเลิก] ' + data.remark;
+             } else if (statusColIndex !== -1 && data.remark) {
+                 // ถ้าไม่มีคอลัมน์ remark ให้พ่วงท้าย status ไปเลย
+                 existingRow[statusColIndex] = 'ยกเลิก (' + data.remark + ')';
+             }
+             
+             // เขียนทับ
+             sheet.getRange(r + 2, 1, 1, headers.length).setValues([existingRow]);
+             isUpdated = true;
+             break;
+          }
+        }
+      }
+    }
+    
+    if (!isUpdated) {
+        return ContentService.createTextOutput(JSON.stringify({status: 'error', message: 'ไม่พบเลขคิว ' + targetId}))
+          .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({status: 'success'}))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({status: 'error', message: err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ===============================================
+// ฟังก์ชัน 6: บันทึกแผนตารางออกรังวัด (บันทึกเป็นกลุ่ม)
+// ===============================================
+function saveSurveySchedule(data) {
+  var SHEET_ID = '1kf10jeU_1ZqqNgLB6t4JGiAs4pwne6waiktI7Ydd2wQ'; 
+  var SHEET_NAME = 'Queue'; 
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(SHEET_NAME);
+    if (!sheet) return ContentService.createTextOutput(JSON.stringify({status: 'error', message: 'Sheet not found'})).setMimeType(ContentService.MimeType.JSON);
+    
+    var lastRow = sheet.getLastRow();
+    if (lastRow <= 1) return ContentService.createTextOutput(JSON.stringify({status: 'success', count: 0})).setMimeType(ContentService.MimeType.JSON);
+
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function(h) { return h.toString().trim(); });
+    
+    var dateIdx = headers.indexOf('survey_date');
+    var timeIdx = headers.indexOf('survey_time');
+    var idIdx = headers.indexOf('req_id') !== -1 ? headers.indexOf('req_id') : headers.indexOf('id');
+    var stIdx = headers.indexOf('status');
+    
+    // Ensure columns exist
+    if (dateIdx === -1) { sheet.getRange(1, headers.length + 1).setValue('survey_date'); dateIdx = headers.length; headers.push('survey_date'); }
+    if (timeIdx === -1) { sheet.getRange(1, headers.length + 1).setValue('survey_time'); timeIdx = headers.length; headers.push('survey_time'); }
+
+    var idData = sheet.getRange(2, idIdx + 1, lastRow - 1, 1).getValues();
+    var rangeToUpdate = sheet.getRange(2, 1, lastRow - 1, headers.length).getValues();
+    var updatedCount = 0;
+
+    for (var i = 0; i < data.schedule.length; i++) {
+      var item = data.schedule[i];
+      var targetDate = item.date || data.survey_date || Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM-dd");
+      for (var r = 0; r < idData.length; r++) {
+        if (idData[r][0] == item.id) {
+          if (dateIdx !== -1) rangeToUpdate[r][dateIdx] = targetDate;
+          if (timeIdx !== -1) rangeToUpdate[r][timeIdx] = item.timeSlot;
+          if (stIdx !== -1) {
+            var curS = rangeToUpdate[r][stIdx];
+            if (curS !== 'รังวัดแล้ว' && curS !== 'ยกเลิก') rangeToUpdate[r][stIdx] = 'รอรังวัด';
+          }
+          updatedCount++;
+          break;
+        }
+      }
+    }
+
+    if (updatedCount > 0) sheet.getRange(2, 1, lastRow - 1, headers.length).setValues(rangeToUpdate);
+    return ContentService.createTextOutput(JSON.stringify({status: 'success', count: updatedCount})).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({status: 'error', message: err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ===============================================
+// ฟังก์ชัน 7: อัปเดตสถานะรายคิว หรือ เบอร์โทร (อัปเดตเดี่ยว)
+// ===============================================
+function updateSurveyItem(data) {
+  var SHEET_ID = '1kf10jeU_1ZqqNgLB6t4JGiAs4pwne6waiktI7Ydd2wQ'; 
+  var SHEET_NAME = 'Queue'; 
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(SHEET_NAME);
+    if (!sheet) return ContentService.createTextOutput(JSON.stringify({status: 'error'})).setMimeType(ContentService.MimeType.JSON);
+    
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function(h) { return h.toString().trim(); });
+    var targetId = data.case_id; 
+    var idColIdx = headers.indexOf('req_id') !== -1 ? headers.indexOf('req_id') : headers.indexOf('id');
+    
+    if (targetId && idColIdx !== -1) {
+      var lastRow = sheet.getLastRow();
+      if (lastRow > 1) {
+        var idData = sheet.getRange(2, idColIdx + 1, lastRow - 1, 1).getValues();
+        for (var r = 0; r < idData.length; r++) {
+          if (idData[r][0] == targetId) {
+            var rowRange = sheet.getRange(r + 2, 1, 1, headers.length);
+            var existingRow = rowRange.getValues()[0];
+            
+            if (data.update_type === 'status') {
+              var sIdx = headers.indexOf('status');
+              if (sIdx !== -1) existingRow[sIdx] = data.new_status;
+            } else if (data.update_type === 'call_log') {
+              var cIdx = headers.indexOf('last_called');
+              if (cIdx === -1) {
+                sheet.getRange(1, headers.length + 1).setValue('last_called');
+                headers.push('last_called');
+                existingRow.push(data.call_time);
+                rowRange = sheet.getRange(r + 2, 1, 1, headers.length);
+              } else {
+                existingRow[cIdx] = data.call_time;
+              }
+            } else if (data.update_type === 'coords') {
+              var coIdx = headers.indexOf('coords');
+              if (coIdx === -1) {
+                sheet.getRange(1, headers.length + 1).setValue('coords');
+                headers.push('coords');
+                existingRow.push(data.new_coords);
+                rowRange = sheet.getRange(r + 2, 1, 1, headers.length);
+              } else {
+                existingRow[coIdx] = data.new_coords;
+              }
+            } else if (data.update_type === 'reschedule') {
+              var dIdx = headers.indexOf('survey_date');
+              var tIdx = headers.indexOf('survey_time');
+              var stIdx = headers.indexOf('status');
+              var remIdx = headers.indexOf('remark');
+              
+              if (dIdx !== -1) existingRow[dIdx] = data.new_date;
+              if (tIdx !== -1) existingRow[tIdx] = data.new_time;
+              if (stIdx !== -1) existingRow[stIdx] = (data.new_date !== '-') ? 'รอรังวัด' : 'พร้อมรังวัด';
+              
+              if (data.remark) {
+                 if (remIdx === -1) {
+                   sheet.getRange(1, headers.length + 1).setValue('remark');
+                   headers.push('remark');
+                   existingRow.push(data.remark);
+                   rowRange = sheet.getRange(r + 2, 1, 1, headers.length);
+                 } else {
+                   existingRow[remIdx] = data.remark;
+                 }
+              }
+            }
+            rowRange.setValues([existingRow]);
+            return ContentService.createTextOutput(JSON.stringify({status: 'success'})).setMimeType(ContentService.MimeType.JSON);
+          }
+        }
+      }
+    }
+    return ContentService.createTextOutput(JSON.stringify({status: 'error', message: 'ID not found'})).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({status: 'error', message: err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+// ===============================================
+// ฟังก์ชัน 8: ตรวจสอบการเข้าสู่ระบบ (Login)
+// ===============================================
+function authenticateUser(data) {
+  var SHEET_ID = '1kf10jeU_1ZqqNgLB6t4JGiAs4pwne6waiktI7Ydd2wQ'; 
+  var SHEET_NAME = 'Users'; // สร้าง Tab ใหม่ชื่อ Users
+  
+  try {
+    var ss = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(SHEET_NAME);
+    
+    if (!sheet) {
+      return ContentService.createTextOutput(JSON.stringify({status: 'error', message: 'ไม่พบหน้า Sheet ที่ชื่อ Users (สำหรับเก็บรหัสผ่าน)'}))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    var lastRow = sheet.getLastRow();
+    if (lastRow <= 1) return ContentService.createTextOutput(JSON.stringify({status: 'error', message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'})).setMimeType(ContentService.MimeType.JSON);
+    
+    // ดึงข้อมูล 4 คอลัมน์: username, password, role, name
+    var sheetData = sheet.getRange(2, 1, lastRow - 1, 4).getValues(); 
+    
+    for (var i = 0; i < sheetData.length; i++) {
+      if (sheetData[i][0].toString() === data.username && sheetData[i][1].toString() === data.password) {
+        return ContentService.createTextOutput(JSON.stringify({
+          status: 'success', 
+          role: sheetData[i][2].toString(),
+          name: sheetData[i][3].toString()
+        })).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+    
+    return ContentService.createTextOutput(JSON.stringify({status: 'error', message: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'}))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({status: 'error', message: err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
